@@ -1,0 +1,67 @@
+{
+  "title": "NeuroWeave Cognitive Runtime",
+  "uid": "neuroweave-runtime",
+  "timezone": "utc",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-6h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Chat Requests / sec (by provider)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "targets": [
+        { "expr": "sum by (provider) (rate(neuroweave_chat_requests_total[5m]))", "legendFormat": "{{provider}}" }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Chat Latency (p50 / p95 / p99)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "targets": [
+        { "expr": "histogram_quantile(0.50, sum(rate(neuroweave_chat_latency_seconds_bucket[5m])) by (le))", "legendFormat": "p50" },
+        { "expr": "histogram_quantile(0.95, sum(rate(neuroweave_chat_latency_seconds_bucket[5m])) by (le))", "legendFormat": "p95" },
+        { "expr": "histogram_quantile(0.99, sum(rate(neuroweave_chat_latency_seconds_bucket[5m])) by (le))", "legendFormat": "p99" }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Chat Error Rate",
+      "type": "stat",
+      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 8 },
+      "targets": [
+        { "expr": "sum(rate(neuroweave_chat_requests_total{status=\"error\"}[5m])) / sum(rate(neuroweave_chat_requests_total[5m]))" }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Memories Ingested / sec (by type)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 6, "y": 8 },
+      "targets": [
+        { "expr": "sum by (memory_type) (rate(neuroweave_memories_ingested_total[5m]))", "legendFormat": "{{memory_type}}" }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Benchmark Runs / hour (by strategy)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+      "targets": [
+        { "expr": "sum by (strategy) (increase(neuroweave_benchmark_runs_total[1h]))", "legendFormat": "{{strategy}}" }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "Dream Sessions (by status)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
+      "targets": [
+        { "expr": "sum by (status) (increase(neuroweave_dream_sessions_total[1h]))", "legendFormat": "{{status}}" }
+      ]
+    }
+  ]
+}

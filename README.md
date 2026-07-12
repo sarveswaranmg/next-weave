@@ -1,452 +1,131 @@
-# NeuroWeave - Day 1 Build Documentation
+# NeuroWeave
 
-## Overview
+**A cognitive memory engine and runtime platform for AI agents.**
 
-NeuroWeave is a foundational cognitive memory engine that stores structured memories instead of raw chat history. It minimizes prompt token usage while enabling efficient future retrieval and supports persistent AI memory.
+NeuroWeave gives your AI agent structured, evolving, long-term memory instead of raw chat
+history or flat vector RAG. It extracts what matters from a conversation, consolidates related
+facts into concepts, builds a model of who the user is and what they're working on, forgets what
+stops mattering, and assembles a token-budgeted context on demand — all behind a single
+`chat()` call.
 
-## Architecture
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/)
 
-### Core Components
+```python
+from neurowave import CognitiveAgent
 
-1. **Memory Extraction Service** - Analyzes conversations and extracts meaningful memories
-2. **Importance Scoring Engine** - Scores memories based on relevance and persistence value
-3. **Embedding Service** - Generates vector embeddings for semantic search
-4. **Memory Storage Service** - Manages database persistence
-5. **Retrieval Engine** - Performs semantic similarity search
-6. **Context Reconstruction** - Compresses and optimizes context for LLM injection
-
-### Memory Types
-
-#### 1. Episodic Memory
-Chronological experiences and events.
-```json
-{
-  "type": "episodic",
-  "content": "User asked about startup ideas",
-  "importance_score": 0.75,
-  "timestamp": "2026-05-13T10:00:00Z"
-}
+agent = CognitiveAgent(provider="openai")
+response = agent.chat(user_id="user-123", message="I'm building a Rust backend for a startup called Nexus.")
+response = agent.chat(user_id="user-123", message="What language am I using again?")
+# -> remembers, without you re-sending any history
 ```
 
-#### 2. Semantic Memory
-Generalized facts and user preferences.
-```json
-{
-  "type": "semantic",
-  "content": "User prefers concise technical answers",
-  "importance_score": 0.85,
-  "confidence": 0.9
-}
-```
+## Why
 
-#### 3. Identity Memory
-Persistent behavioral patterns and long-term goals.
-```json
-{
-  "type": "identity",
-  "content": "User is preparing for backend engineering interviews",
-  "importance_score": 0.88,
-  "strength": 0.85
-}
-```
+Most LLM "memory" is either the full chat log pasted back into every prompt (unbounded token
+cost) or flat vector retrieval over raw messages (no structure, nothing ever consolidates or
+gets forgotten). NeuroWeave instead gives memory a real lifecycle: extraction → scoring →
+consolidation → decay/forgetting → predictive, budget-aware recall — the same shape human
+memory actually has. See [**docs/DOCUMENTATION.md**](docs/DOCUMENTATION.md#why-neuroweave) for
+the full rationale.
 
-#### 4. Procedural Memory
-How the AI should behave.
-```json
-{
-  "type": "procedural",
-  "content": "Respond concisely, use technical depth, avoid long explanations",
-  "importance_score": 0.92,
-  "priority": 1
-}
-```
+## Features
 
-## Technology Stack
+- **Structured memory extraction** — episodic / semantic / identity / procedural, scored and
+  typed, not raw text blobs.
+- **Semantic consolidation** — related memories cluster into higher-level concepts over time.
+- **Identity graph** — an explicit, evolving model of who the user is.
+- **World model** — tracks projects, technologies, entities, and decisions from conversation.
+- **Predictive, budget-aware recall** — assembles a token-budgeted context, not just top-K nearest
+  neighbors.
+- **Memory evolution & forgetting** — decay, archival, and revival instead of unbounded growth;
+  soft-delete by default.
+- **Dream mode** — offline consolidation during idle periods (pattern discovery, contradiction
+  resolution, knowledge synthesis).
+- **Runtime platform** — one `RuntimeOrchestrator.chat()` pipeline wiring all of the above behind
+  REST, WebSocket, and SDK entry points, model-agnostic across 9 LLM providers.
+- **NeuroBench** — a built-in benchmark suite comparing memory strategies (no-memory vs.
+  raw-history vs. NeuroWeave) on real, measured metrics.
+- **Python & TypeScript SDKs**, plus a LangChain memory adapter.
+- **Production scaffolding** — Prometheus metrics, GDPR-compliant hard-deletion, API-key auth,
+  Docker Compose, Kubernetes manifests, CI with a continuous-evaluation benchmark job.
 
-- **FastAPI** - Web framework
-- **PostgreSQL** - Primary database
-- **pgvector** - Vector similarity search
-- **Redis** - Caching layer
-- **SQLAlchemy** - ORM
-- **Alembic** - Database migrations
-- **Pydantic** - Data validation
-- **OpenAI SDK** - Embeddings and extraction
-- **Docker** - Containerization
+## Quick Start
 
-## Project Structure
-
-```
-app/
-├── api/                 # FastAPI routes
-│   ├── ingest.py       # Memory ingestion endpoints
-│   ├── retrieval.py    # Memory retrieval endpoints
-│   └── health.py       # Health check endpoints
-├── core/               # Configuration and logging
-│   ├── config.py       # Settings management
-│   └── logging.py      # Logger setup
-├── db/                 # Database layer
-│   ├── database.py     # Connection management
-│   └── models.py       # SQLAlchemy models
-├── memory/             # Memory operations
-│   ├── embeddings.py   # Embedding service
-│   └── storage.py      # Storage service
-├── retrieval/          # Retrieval operations
-│   ├── engine.py       # Retrieval logic
-│   └── reconstruction.py # Context reconstruction
-├── services/           # Business logic
-│   ├── extraction.py    # Memory extraction
-│   └── scoring.py       # Importance scoring
-├── schemas/            # Pydantic models
-│   └── memory.py       # Memory schemas
-├── utils/              # Utilities
-│   └── helpers.py      # Helper functions
-└── main.py             # FastAPI application
-
-migrations/             # Alembic migrations
-```
-
-## Installation
-
-### Prerequisites
-- Docker and Docker Compose
-- Python 3.11+
-- PostgreSQL 15+
-- OpenAI API Key
-
-### Quick Start
-
-1. **Clone and setup**
-```bash
-cd /Users/sarves/Desktop/NextWeave
-cp .env.example .env
-# Edit .env and add your OpenAI API key
-```
-
-2. **Start with Docker**
-```bash
-docker-compose up -d
-```
-
-3. **Run migrations**
-```bash
-docker-compose exec neuroweave alembic upgrade head
-```
-
-4. **Access API**
-- Swagger UI: http://localhost:8000/docs
-- API Root: http://localhost:8000
-- Health: http://localhost:8000/health
-
-### Local Development
+**Prerequisites:** Docker + Docker Compose (or Python 3.11+ with a local Postgres+pgvector and
+Redis).
 
 ```bash
-# Create virtual environment
-python -m venv venv
-source venv/bin/activate
+git clone <this-repo-url>
+cd NextWeave
+cp .env.example .env            # set OPENAI_API_KEY at minimum
+docker compose up -d            # postgres, redis, api, celery-worker, celery-beat
+docker compose exec neuroweave alembic upgrade head
+```
 
-# Install dependencies
+The API is now live at `http://localhost:8000` — try `/docs` for interactive Swagger, or:
+
+```bash
+curl -X POST localhost:8000/runtime/chat \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "00000000-0000-0000-0000-000000000001", "message": "I prefer concise answers and I work with FastAPI and PostgreSQL.", "provider": "echo"}'
+```
+
+Without Docker:
+```bash
 pip install -r requirements.txt
-
-# Set environment variables
-export DATABASE_URL=postgresql://neuroweave:neuroweave@localhost:5432/neuroweave
-export REDIS_URL=redis://localhost:6379/0
-export OPENAI_API_KEY=your_key_here
-
-# Run locally
+alembic upgrade head
 uvicorn app.main:app --reload
 ```
 
-## API Endpoints
+## Using the SDK
 
-### Memory Ingestion
+```bash
+pip install -e sdk/python[dev]
+```
+```python
+from neurowave import CognitiveAgent
 
-**POST** `/memory/ingest`
-
-Extract and store memories from conversation.
-
-**Request:**
-```json
-{
-  "user_id": "550e8400-e29b-41d4-a716-446655440000",
-  "conversation": "I'm building an AI startup focused on inference optimization. I prefer concise technical answers and deep dives into system design.",
-  "session_metadata": {}
-}
+agent = CognitiveAgent(provider="openai", base_url="http://localhost:8000")
+result = agent.chat(user_id="...", message="...")
+agent.explain(user_id="...", subject_type="decision")   # why did it respond this way?
+agent.forget_user(user_id="...")                          # GDPR erasure
 ```
 
-**Response:**
-```json
-{
-  "extracted_memories": [
-    {
-      "memory_type": "identity",
-      "content": "Building AI startup focused on inference optimization",
-      "summary": "User is building AI startup",
-      "importance_score": 0.92,
-      "metadata": {"extraction_method": "llm"}
-    },
-    {
-      "memory_type": "procedural",
-      "content": "Prefers concise technical answers",
-      "summary": "Communication preference",
-      "importance_score": 0.88,
-      "metadata": {"extraction_method": "llm"}
-    }
-  ],
-  "total_tokens_saved": 245,
-  "ingestion_latency_ms": 1234.56
-}
+TypeScript:
+```bash
+cd sdk/typescript && npm install && npm run build
+```
+```ts
+import { CognitiveAgent } from "neurowave";
+const agent = new CognitiveAgent({ provider: "openai", baseUrl: "http://localhost:8000" });
+await agent.chat(userId, "...");
 ```
 
-### Memory Retrieval
+## Documentation
 
-**POST** `/memory/retrieve`
+**[docs/DOCUMENTATION.md](docs/DOCUMENTATION.md)** is the complete reference: architecture, the
+full memory pipeline, database schema, every API endpoint, SDK usage, configuration reference,
+deployment (Docker/K8s/CI), observability, security & privacy, testing, and the NeuroBench
+benchmark methodology — plus an honest list of known limitations and the roadmap.
 
-Retrieve relevant memories for a query.
-
-**Request:**
-```json
-{
-  "user_id": "550e8400-e29b-41d4-a716-446655440000",
-  "query": "Help me design the inference engine architecture",
-  "top_k": 10,
-  "memory_types": null,
-  "min_importance": 0.3
-}
-```
-
-**Response:**
-```json
-{
-  "retrieved_memories": [
-    {
-      "id": "650e8400-e29b-41d4-a716-446655440000",
-      "user_id": "550e8400-e29b-41d4-a716-446655440000",
-      "memory_type": "identity",
-      "content": "Building AI startup focused on inference optimization",
-      "summary": "User is building AI startup",
-      "importance_score": 0.92,
-      "reinforcement_count": 0,
-      "access_count": 2,
-      "last_accessed": "2026-05-13T10:30:00Z",
-      "created_at": "2026-05-13T10:00:00Z",
-      "updated_at": "2026-05-13T10:30:00Z",
-      "metadata": {}
-    }
-  ],
-  "compressed_context": {
-    "user_profile": "Interaction Style:\n- Prefers concise technical answers\n\nUser Profile:\n- Building AI startup focused on inference optimization\n- Interested in system design",
-    "relevant_memories": [
-      "Building AI startup focused on inference optimization",
-      "Prefers concise technical answers"
-    ],
-    "context_summary": "Query: Help me design the inference engine architecture\n\nRelevant Context:\n- [identity] Building AI startup focused on inference optimization\n- [procedural] Prefers concise technical answers",
-    "estimated_tokens": 127
-  },
-  "retrieval_latency_ms": 456.23,
-  "context_token_reduction_percent": 78.5
-}
-```
-
-### Context Reconstruction
-
-**POST** `/memory/reconstruct`
-
-Reconstruct compressed context for LLM injection.
-
-**Request:**
-```json
-{
-  "user_id": "550e8400-e29b-41d4-a716-446655440000",
-  "query": "What should I optimize for in my inference engine?",
-  "include_procedural": true,
-  "context_token_limit": 2000
-}
-```
-
-**Response:**
-```json
-{
-  "reconstructed_context": "Query: What should I optimize for in my inference engine?\n\nRelevant Context:\n- [identity] Building AI startup focused on inference optimization\n- [procedural] Prefers concise technical answers\n- [semantic] User likes deep technical discussions",
-  "source_memory_count": 8,
-  "estimated_tokens": 156,
-  "reconstruction_latency_ms": 345.67
-}
-```
-
-### Health Check
-
-**GET** `/health`
-
-**Response:**
-```json
-{
-  "status": "healthy",
-  "version": "0.1.0",
-  "environment": "development",
-  "timestamp": "2026-05-13T10:35:00Z"
-}
-```
-
-## Database Schema
-
-### Users Table
-```sql
-CREATE TABLE users (
-  id UUID PRIMARY KEY,
-  external_id VARCHAR(255) UNIQUE NOT NULL,
-  name VARCHAR(255),
-  email VARCHAR(255) UNIQUE,
-  created_at TIMESTAMP NOT NULL,
-  updated_at TIMESTAMP NOT NULL
-);
-```
-
-### Memories Table
-```sql
-CREATE TABLE memories (
-  id UUID PRIMARY KEY,
-  user_id UUID REFERENCES users(id),
-  memory_type ENUM('episodic', 'semantic', 'identity', 'procedural'),
-  content TEXT NOT NULL,
-  summary TEXT,
-  importance_score FLOAT,
-  embedding VARCHAR(255),
-  metadata JSON,
-  reinforcement_count INTEGER DEFAULT 0,
-  access_count INTEGER DEFAULT 0,
-  last_accessed TIMESTAMP,
-  created_at TIMESTAMP NOT NULL,
-  updated_at TIMESTAMP NOT NULL
-);
-```
-
-### Memory Embeddings Table
-```sql
-CREATE TABLE memory_embeddings (
-  id UUID PRIMARY KEY,
-  memory_id UUID REFERENCES memories(id),
-  embedding TEXT NOT NULL,  -- pgvector format
-  model VARCHAR(100),
-  created_at TIMESTAMP NOT NULL
-);
-```
-
-### Retrieval Logs Table
-```sql
-CREATE TABLE retrieval_logs (
-  id UUID PRIMARY KEY,
-  user_id UUID REFERENCES users(id),
-  query TEXT,
-  retrieved_memory_ids JSON,
-  retrieval_latency_ms FLOAT,
-  context_token_count INTEGER,
-  created_at TIMESTAMP NOT NULL
-);
-```
-
-## Performance Characteristics
-
-### Latency
-- Memory Ingestion: ~1-2 seconds (includes LLM extraction)
-- Memory Retrieval: ~400-600ms (includes vector similarity search)
-- Context Reconstruction: ~300-500ms
-
-### Token Efficiency
-- **Baseline (raw chat)**: 1000+ tokens for 10 messages
-- **NeuroWeave**: 150-200 tokens for equivalent context
-- **Savings**: 70-85% token reduction
-
-### Scalability
-- Supports millions of memories per user
-- Handles 1000+ concurrent retrievals
-- Vector search via pgvector indexes
-- Horizontal scaling via Redis caching
-
-## Future Extensions
-
-### Phase 2: Memory Consolidation
-- Semantic consolidation of similar memories
-- Automated summarization
-- Memory decay systems
-
-### Phase 3: Predictive Memory
-- Predict relevant memories before queries
-- Context anticipation
-- Proactive memory injection
-
-### Phase 4: Multi-modal Memory
-- Image embeddings
-- Audio transcription embeddings
-- Document embeddings
-
-### Phase 5: Distributed Memory
-- Cross-user learning
-- Semantic memory sharing
-- Global knowledge base
+This project was originally built incrementally across ten milestones; the detailed build logs
+(what was built, what was tested, and real bugs found and fixed at each stage) are preserved in
+[`docs/archive/`](docs/archive/) for anyone who wants the implementation history.
 
 ## Testing
 
 ```bash
-# Run tests
-pytest
-
-# With coverage
-pytest --cov=app
-
-# Specific test
-pytest app/tests/test_extraction.py
+pytest tests/ -v                                          # backend suite
+pytest sdk/python/tests/ -v                                # Python SDK
+cd sdk/typescript && npx tsc -p tsconfig.json --noEmit     # TypeScript typecheck
 ```
 
-## Monitoring
+## Contributing
 
-### Key Metrics
-- Memory ingestion latency
-- Retrieval latency
-- Token reduction percentage
-- Memory importance score distribution
-- Cache hit rates
-
-### Logs
-All services log to stdout with structured logging.
-
-## Troubleshooting
-
-### Database Connection Issues
-```bash
-# Check PostgreSQL
-docker-compose exec postgres pg_isready -U neuroweave
-
-# Check Redis
-docker-compose exec redis redis-cli ping
-```
-
-### API Issues
-```bash
-# Check logs
-docker-compose logs -f neuroweave
-
-# Verify health
-curl http://localhost:8000/health
-```
-
-## Environment Variables
-
-```
-DATABASE_URL              # PostgreSQL connection string
-REDIS_URL                 # Redis connection string
-OPENAI_API_KEY           # OpenAI API key for embeddings
-MEMORY_IMPORTANCE_THRESHOLD  # Minimum importance to store (0.0-1.0)
-MEMORY_RETRIEVAL_TOP_K   # Default number of memories to retrieve
-MEMORY_CONTEXT_TOKEN_LIMIT # Max tokens for compressed context
-DEBUG                     # Enable debug logging
-ENVIRONMENT              # development/production
-```
+Contributions are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md) for setup, the project's
+design philosophy, and PR expectations.
 
 ## License
 
-NeuroWeave - Day 1 Foundation
-Copyright 2026 - All Rights Reserved
-
-## Contact
-
-For issues, feature requests, or feedback, please refer to the GitHub repository.
+[MIT](LICENSE)

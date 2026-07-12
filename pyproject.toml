@@ -1,13 +1,14 @@
 [project]
 name = "neuroweave"
-version = "0.1.0"
-description = "Cognitive Memory Engine for AI"
+version = "1.0.0"
+description = "Cognitive Memory Engine and Runtime Platform for AI Agents"
 readme = "README.md"
 requires-python = ">=3.11"
+license = { text = "MIT" }
 authors = [
-    {name = "NeuroWeave Team"},
+    {name = "NeuroWeave Contributors"},
 ]
-keywords = ["ai", "memory", "cognitive", "llm", "embeddings"]
+keywords = ["ai", "memory", "cognitive", "llm", "embeddings", "agents", "rag"]
 
 [build-system]
 requires = ["setuptools>=45", "wheel"]

@@ -41,7 +41,7 @@ class MemoryStorageService:
                 content=memory.content,
                 summary=memory.summary,
                 importance_score=memory.importance_score,
-                metadata=memory.metadata,
+                extra_metadata=memory.metadata,
             )
 
             session.add(db_memory)
@@ -95,7 +95,7 @@ class MemoryStorageService:
                     content=memory.content,
                     summary=memory.summary,
                     importance_score=memory.importance_score,
-                    metadata=memory.metadata,
+                    extra_metadata=memory.metadata,
                 )
                 session.add(db_memory)
                 stored_memories.append(db_memory)

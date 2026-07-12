@@ -104,3 +104,8 @@ class EmbeddingService:
 
 # Singleton instance
 embedding_service = EmbeddingService()
+
+
+def get_embedding_service() -> EmbeddingService:
+    """Get the shared embedding service instance"""
+    return embedding_service

@@ -1,5 +1,3 @@
-version: '3.9'
-
 services:
   postgres:
     image: pgvector/pgvector:pg15-latest
@@ -38,6 +36,8 @@ services:
       DATABASE_URL: postgresql://neuroweave:neuroweave@postgres:5432/neuroweave
       REDIS_URL: redis://redis:6379/0
       OPENAI_API_KEY: ${OPENAI_API_KEY}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      RUNTIME_API_KEY: ${RUNTIME_API_KEY:-}
       DEBUG: "false"
       ENVIRONMENT: development
     ports:
@@ -50,6 +50,47 @@ services:
     volumes:
       - ./app:/app/app
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  celery-worker:
+    build: .
+    container_name: neuroweave-celery-worker
+    environment:
+      DATABASE_URL: postgresql://neuroweave:neuroweave@postgres:5432/neuroweave
+      REDIS_URL: redis://redis:6379/0
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      DEBUG: "false"
+      ENVIRONMENT: development
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./app:/app/app
+    command: celery -A app.workers.celery_app worker --loglevel=info --concurrency=4
+
+  celery-beat:
+    build: .
+    container_name: neuroweave-celery-beat
+    environment:
+      DATABASE_URL: postgresql://neuroweave:neuroweave@postgres:5432/neuroweave
+      REDIS_URL: redis://redis:6379/0
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      DEBUG: "false"
+      ENVIRONMENT: development
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./app:/app/app
+    # Exactly one beat replica - a second one would double-fire every
+    # scheduled task (memory evolution ticks, dream-mode scheduling,
+    # retention enforcement).
+    command: celery -A app.workers.celery_app beat --loglevel=info
 
 volumes:
   postgres_data:

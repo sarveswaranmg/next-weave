@@ -1,0 +1,92 @@
+// NeuroWeave Cognitive Runtime - gRPC service definition.
+//
+// A real, valid .proto artifact defining the gRPC surface parallel to the
+// REST API (app/api/runtime.py) - NOT wired up to a running gRPC server
+// in this build (grpcio-tools codegen wasn't run in this environment).
+// To stand up the gRPC server:
+//   1. python -m grpc_tools.protoc -I proto --python_out=app/grpc_gen \
+//        --grpc_python_out=app/grpc_gen proto/neuroweave.proto
+//   2. Implement a CognitiveRuntimeServicer that calls the same service
+//      classes app/api/runtime.py already calls (RuntimeOrchestrator,
+//      NeuroBench, ExplainabilityEngine, RuntimeMetricsService) - the
+//      REST and gRPC surfaces should share the same service layer, never
+//      duplicate pipeline logic.
+//   3. Serve alongside uvicorn via grpc.aio, on a separate port.
+syntax = "proto3";
+
+package neuroweave.v1;
+
+service CognitiveRuntime {
+  rpc Chat(ChatRequest) returns (ChatResponse);
+  rpc ChatStream(ChatRequest) returns (stream ChatChunk);
+  rpc Explain(ExplainRequest) returns (ExplainResponse);
+  rpc GetMetrics(MetricsRequest) returns (MetricsResponse);
+  rpc RunBenchmark(BenchmarkRequest) returns (BenchmarkResponse);
+}
+
+message ChatRequest {
+  string user_id = 1;
+  string message = 2;
+  string provider = 3;
+  string model = 4;
+  bool memory = 5;
+  bool world_model = 6;
+  bool predictive_recall = 7;
+  bool context_composer = 8;
+  int32 token_budget = 9;
+}
+
+message ChatResponse {
+  string response = 1;
+  string provider = 2;
+  string model = 3;
+  map<string, int32> usage = 4;
+  double total_latency_ms = 5;
+}
+
+message ChatChunk {
+  string content = 1;
+  bool done = 2;
+}
+
+message ExplainRequest {
+  string user_id = 1;
+  string subject_type = 2;
+  string subject_id = 3;
+}
+
+message ExplainResponse {
+  bool found = 1;
+  string json_payload = 2;  // Structured explanation, JSON-encoded (mirrors GET /runtime/explain)
+}
+
+message MetricsRequest {
+  string user_id = 1;
+}
+
+message MetricsResponse {
+  int32 memory_count = 1;
+  int32 concept_count = 2;
+  int32 identity_nodes = 3;
+  int32 world_nodes = 4;
+  double compression_ratio = 5;
+  double cognitive_health_score = 6;
+}
+
+message BenchmarkRequest {
+  string user_id = 1;
+  string query = 2;
+  repeated string history = 3;
+  repeated string strategies = 4;
+}
+
+message BenchmarkResponse {
+  repeated BenchmarkRun runs = 1;
+}
+
+message BenchmarkRun {
+  string strategy = 1;
+  double latency_ms = 2;
+  int32 token_usage = 3;
+  double compression_ratio = 4;
+}

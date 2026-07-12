@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: neuroweave-config
+  namespace: neuroweave
+data:
+  ENVIRONMENT: "production"
+  DEBUG: "false"
+  LOG_LEVEL: "INFO"
+  MEMORY_RETRIEVAL_TOP_K: "10"
+  MEMORY_CONTEXT_TOKEN_LIMIT: "2000"
+  # DATABASE_URL / REDIS_URL point at managed services in production
+  # (RDS/Cloud SQL for Postgres w/ pgvector, ElastiCache/Memorystore for
+  # Redis) rather than in-cluster StatefulSets - see
+  # DAY10_RUNTIME_PLATFORM.md "Production Infrastructure" for why.
+  DATABASE_URL: "postgresql://neuroweave:neuroweave@postgres:5432/neuroweave"
+  REDIS_URL: "redis://redis:6379/0"

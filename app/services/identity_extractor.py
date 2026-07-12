@@ -381,7 +381,7 @@ Confidence should reflect how strongly the context supports the trait."""
                         reinforcement_count=1,
                         last_reinforced_at=datetime.utcnow(),
                         importance=self._calculate_importance(trait_type, trait["confidence"]),
-                        metadata={"reasoning": trait.get("reasoning", "")}
+                        extra_metadata={"reasoning": trait.get("reasoning", "")}
                     )
                     self.db.add(node)
                     created_nodes.append(node)

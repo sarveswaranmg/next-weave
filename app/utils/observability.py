@@ -5,7 +5,10 @@ from typing import Dict, Optional, List
 from datetime import datetime
 from dataclasses import dataclass, asdict
 from sqlalchemy.orm import Session
-from app.db.models import Memory, RetrievalLog, CognitiveMemoryStateEnum
+from app.db.models import (
+    Memory, RetrievalLog, CognitiveMemoryStateEnum, PredictiveRecallLog,
+    ContextSnapshot, ContextMetrics,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -173,6 +176,47 @@ class CognitiveObservability:
         self._add_metric(metric)
         logger.info(f"Decay metric: {previous_state} → {new_state} after {days_since_access} days")
     
+    def log_predictive_recall_metric(
+        self,
+        user_id: str,
+        query: str,
+        goal: str,
+        goal_confidence: float,
+        selected_count: int,
+        average_utility_score: float,
+        estimated_tokens: int,
+        total_latency_ms: float,
+        context: Optional[Dict] = None
+    ) -> None:
+        """Log a predictive recall pipeline run (Day 5)"""
+        additional = {
+            "query": query,
+            "goal": goal,
+            "goal_confidence": goal_confidence,
+            "selected_count": selected_count,
+            "estimated_tokens": estimated_tokens,
+            **(context or {})
+        }
+
+        metric = CognitiveMetrics(
+            timestamp=datetime.utcnow(),
+            user_id=user_id,
+            metric_type="predictive_recall",
+            memory_id="batch",
+            memory_type="mixed",
+            cognitive_state="predicted",
+            importance_score=average_utility_score,
+            memory_strength=0.0,
+            operation_latency_ms=total_latency_ms,
+            additional_context=additional
+        )
+
+        self._add_metric(metric)
+        logger.info(
+            f"Predictive recall metric: goal={goal}, utility={average_utility_score:.2f}, "
+            f"latency={total_latency_ms:.2f}ms, selected={selected_count}"
+        )
+
     def _add_metric(self, metric: CognitiveMetrics) -> None:
         """Add metric to buffer"""
         self.metrics_buffer.append(metric)
@@ -345,6 +389,115 @@ class CognitiveAnalytics:
             "average_token_count": total_tokens / count if count > 0 else 0,
             "min_latency_ms": min(log.retrieval_latency_ms or 0.0 for log in logs),
             "max_latency_ms": max(log.retrieval_latency_ms or 0.0 for log in logs),
+        }
+
+    def get_predictive_recall_performance(self, user_id: str, limit: int = 100) -> Dict:
+        """
+        Get Day 5 predictive recall performance statistics.
+
+        Tracks: average utility score, average retrieved memories, average
+        prompt tokens, prediction latency breakdown, and goal distribution —
+        the observability surface called for by the Predictive Recall Engine.
+        """
+        logs = self.session.query(PredictiveRecallLog).filter(
+            PredictiveRecallLog.user_id == user_id
+        ).order_by(PredictiveRecallLog.created_at.desc()).limit(limit).all()
+
+        if not logs:
+            return {
+                "user_id": str(user_id),
+                "run_count": 0,
+                "average_utility_score": 0.0,
+                "average_selected_memories": 0.0,
+                "average_prompt_tokens": 0.0,
+                "average_candidate_count": 0.0,
+                "average_total_latency_ms": 0.0,
+                "latency_breakdown_ms": {},
+                "goal_distribution": {},
+            }
+
+        count = len(logs)
+        total_utility = sum(log.average_utility_score or 0.0 for log in logs)
+        total_selected = sum(len(log.selected_memory_ids or []) for log in logs)
+        total_tokens = sum(log.estimated_tokens or 0 for log in logs)
+        total_candidates = sum(log.candidate_count or 0 for log in logs)
+        total_latency = sum(log.total_latency_ms or 0.0 for log in logs)
+
+        goal_distribution: Dict[str, int] = {}
+        for log in logs:
+            goal = log.detected_goal or "unknown"
+            goal_distribution[goal] = goal_distribution.get(goal, 0) + 1
+
+        latency_breakdown = {
+            "goal_detection_ms": sum(log.goal_detection_latency_ms or 0.0 for log in logs) / count,
+            "intent_classification_ms": sum(log.intent_classification_latency_ms or 0.0 for log in logs) / count,
+            "candidate_retrieval_ms": sum(log.candidate_retrieval_latency_ms or 0.0 for log in logs) / count,
+            "utility_prediction_ms": sum(log.utility_prediction_latency_ms or 0.0 for log in logs) / count,
+            "ranking_ms": sum(log.ranking_latency_ms or 0.0 for log in logs) / count,
+            "token_optimization_ms": sum(log.token_optimization_latency_ms or 0.0 for log in logs) / count,
+            "context_assembly_ms": sum(log.context_assembly_latency_ms or 0.0 for log in logs) / count,
+        }
+
+        return {
+            "user_id": str(user_id),
+            "run_count": count,
+            "average_utility_score": total_utility / count,
+            "average_selected_memories": total_selected / count,
+            "average_prompt_tokens": total_tokens / count,
+            "average_candidate_count": total_candidates / count,
+            "average_total_latency_ms": total_latency / count,
+            "latency_breakdown_ms": latency_breakdown,
+            "goal_distribution": goal_distribution,
+        }
+
+    def get_context_composition_performance(self, user_id: str, limit: int = 100) -> Dict:
+        """
+        Get Day 6 Cognitive Context Composer performance statistics.
+
+        Tracks: average context size, compression ratio, quality score,
+        contradiction count, knowledge gaps detected, and latency — the
+        observability surface called for by the CCC.
+        """
+        snapshots = self.session.query(ContextSnapshot).filter(
+            ContextSnapshot.user_id == user_id
+        ).order_by(ContextSnapshot.created_at.desc()).limit(limit).all()
+
+        if not snapshots:
+            return {
+                "user_id": str(user_id),
+                "snapshot_count": 0,
+                "average_quality_score": 0.0,
+                "average_coverage": 0.0,
+                "average_redundancy": 0.0,
+                "average_identity_alignment": 0.0,
+                "average_goal_alignment": 0.0,
+                "average_compression_ratio": 0.0,
+                "average_token_count": 0.0,
+                "average_contradiction_count": 0.0,
+                "average_missing_topics": 0.0,
+                "average_latency_ms": 0.0,
+            }
+
+        count = len(snapshots)
+        snapshot_ids = [s.id for s in snapshots]
+        metrics = self.session.query(ContextMetrics).filter(
+            ContextMetrics.snapshot_id.in_(snapshot_ids)
+        ).all()
+        metrics_count = len(metrics) or 1
+
+        return {
+            "user_id": str(user_id),
+            "snapshot_count": count,
+            "average_quality_score": sum(s.context_quality or 0.0 for s in snapshots) / count,
+            "average_coverage": sum(m.coverage or 0.0 for m in metrics) / metrics_count,
+            "average_redundancy": sum(m.redundancy or 0.0 for m in metrics) / metrics_count,
+            "average_identity_alignment": sum(m.identity_alignment or 0.0 for m in metrics) / metrics_count,
+            "average_goal_alignment": sum(m.goal_alignment or 0.0 for m in metrics) / metrics_count,
+            "average_compression_ratio": sum(s.compression_ratio or 0.0 for s in snapshots) / count,
+            "average_token_count": sum(s.token_count or 0 for s in snapshots) / count,
+            "average_contradiction_count": sum(s.contradiction_count or 0 for s in snapshots) / count,
+            "average_missing_topics": sum(len(s.missing_topics or []) for s in snapshots) / count,
+            "average_latency_ms": sum(s.total_latency_ms or 0.0 for s in snapshots) / count,
         }
 
 

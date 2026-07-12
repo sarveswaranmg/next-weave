@@ -80,7 +80,7 @@ def retrieve_memories(
                 last_accessed=m.last_accessed,
                 created_at=m.created_at,
                 updated_at=m.updated_at,
-                metadata=m.metadata,
+                metadata=m.extra_metadata,
             )
             for m in retrieved
         ]

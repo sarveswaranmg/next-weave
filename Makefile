@@ -1,19 +1,20 @@
-.PHONY: help install dev test lint format clean docker-build docker-up docker-down migrate docs
+.PHONY: help install dev test test-sdk lint format clean docker-build docker-up docker-down migrate docs
 
 help:
 	@echo "NeuroWeave Development Commands"
 	@echo "==============================="
 	@echo "make install    - Install dependencies"
 	@echo "make dev        - Run development server"
-	@echo "make test       - Run tests"
+	@echo "make test       - Run backend test suite"
+	@echo "make test-sdk   - Run Python SDK test suite"
 	@echo "make lint       - Run linting"
 	@echo "make format     - Format code"
 	@echo "make clean      - Clean cache and build files"
 	@echo "make docker-build - Build Docker image"
-	@echo "make docker-up  - Start Docker containers"
+	@echo "make docker-up  - Start Docker containers (api + worker + beat)"
 	@echo "make docker-down - Stop Docker containers"
 	@echo "make migrate    - Run database migrations"
-	@echo "make docs       - Generate documentation"
+	@echo "make docs       - Show where the documentation lives"
 
 install:
 	pip install -r requirements.txt
@@ -24,6 +25,10 @@ dev:
 
 test:
 	pytest -v --cov=app --cov-report=html
+
+test-sdk:
+	pip install -e sdk/python[dev]
+	pytest sdk/python/tests/ -v
 
 lint:
 	flake8 app
@@ -63,7 +68,7 @@ db-create:
 
 docs:
 	@echo "Documentation:"
-	@echo "- README.md - Project overview"
-	@echo "- ARCHITECTURE.md - Design decisions"
-	@echo "- TESTING.md - Testing strategy"
-	@echo "- DEPLOYMENT.md - Production deployment"
+	@echo "- README.md - Project overview & quickstart"
+	@echo "- docs/DOCUMENTATION.md - Full reference (architecture, API, deployment, security, benchmarking)"
+	@echo "- CONTRIBUTING.md - How to contribute"
+	@echo "- docs/archive/ - Historical build logs per milestone"

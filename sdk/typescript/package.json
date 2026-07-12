@@ -1,0 +1,20 @@
+{
+  "name": "neurowave",
+  "version": "1.0.0",
+  "description": "TypeScript SDK for the NeuroWeave Cognitive Runtime Platform",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "license": "MIT",
+  "keywords": ["ai", "memory", "cognitive", "llm", "agents", "sdk"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "node --test dist-test/*.test.js"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

@@ -1,7 +1,7 @@
 """Database connection and session management"""
 from sqlalchemy import create_engine, event
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
-from sqlalchemy.orm import declarative_base, Session
+from sqlalchemy.orm import declarative_base, Session, sessionmaker
 from app.core.config import settings
 from contextlib import contextmanager
 import logging
@@ -30,7 +30,7 @@ AsyncSessionLocal = async_sessionmaker(
     async_engine, class_=AsyncSession, expire_on_commit=False
 )
 
-SessionLocal = async_sessionmaker(sync_engine, expire_on_commit=False)
+SessionLocal = sessionmaker(sync_engine, expire_on_commit=False)
 
 Base = declarative_base()
 
@@ -48,6 +48,15 @@ async def get_async_session() -> AsyncSession:
 def get_db_session() -> Session:
     """Get synchronous database session"""
     return SessionLocal()
+
+
+def get_db():
+    """FastAPI dependency yielding a synchronous session that auto-closes"""
+    session = SessionLocal()
+    try:
+        yield session
+    finally:
+        session.close()
 
 
 @contextmanager

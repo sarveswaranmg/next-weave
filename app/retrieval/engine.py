@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from app.db.models import Memory, MemoryEmbedding, MemoryTypeEnum, CognitiveMemoryStateEnum
 from app.schemas.memory import MemoryResponse, CompressedContext
 from app.memory.embeddings import embedding_service
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -60,12 +61,19 @@ class MemoryRetrievalEngine:
             # Generate query embedding
             query_embedding = self.embedding_service.embed_text(query)
 
-            # Build base query - exclude archived memories unless explicitly requested
+            # Build base query - exclude archived/forgotten, low-strength, and
+            # high-entropy memories (Day 7: a living memory system retrieves
+            # only healthy, current knowledge, not everything ever stored)
             base_query = select(Memory).where(
                 and_(
                     Memory.user_id == user_id,
                     Memory.importance_score >= min_importance,
-                    Memory.cognitive_state != CognitiveMemoryStateEnum.ARCHIVED,
+                    Memory.cognitive_state.notin_([
+                        CognitiveMemoryStateEnum.ARCHIVED,
+                        CognitiveMemoryStateEnum.FORGOTTEN,
+                    ]),
+                    or_(Memory.memory_strength.is_(None), Memory.memory_strength >= settings.retrieval_min_strength),
+                    or_(Memory.entropy_score.is_(None), Memory.entropy_score <= settings.retrieval_max_entropy),
                 )
             )
 

@@ -75,7 +75,7 @@ class ConceptGenerator:
                 support_count=len(memories),
                 supporting_memory_ids=[str(m.id) for m in memories],
                 embedding=str(concept_embedding),
-                metadata={
+                extra_metadata={
                     'cluster_id': cluster.cluster_id,
                     'extraction_method': 'llm_assisted',
                     'theme': cluster.theme,

@@ -126,13 +126,13 @@ class MemoryMergeService:
             # Merge metadata
             merged_metadata = {}
             for memory in memories:
-                if memory.metadata:
-                    merged_metadata.update(memory.metadata)
+                if memory.extra_metadata:
+                    merged_metadata.update(memory.extra_metadata)
 
             # Update primary memory
             primary.summary = self._generate_merged_summary(memories)
-            primary.metadata = merged_metadata
-            primary.metadata['merged_from'] = [str(m.id) for m in memories[1:]]
+            primary.extra_metadata = merged_metadata
+            primary.extra_metadata['merged_from'] = [str(m.id) for m in memories[1:]]
             primary.importance_score = min(1.0, max(m.importance_score for m in memories))
             
             # Update cognitive scores (average)

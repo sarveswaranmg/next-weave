@@ -10,6 +10,12 @@ from app.api import ingest_router, retrieval_router, health_router
 from app.api.cognitive import router as cognitive_router
 from app.api.consolidation import router as consolidation_router
 from app.api.identity import router as identity_router
+from app.api.predictive_recall import router as predictive_recall_router
+from app.api.context_composer import router as context_composer_router
+from app.api.memory_evolution import router as memory_evolution_router
+from app.api.dream import router as dream_router
+from app.api.world import router as world_router
+from app.api.runtime import router as runtime_router, metrics_router
 from app.db.database import async_engine
 from app.db.models import Base
 
@@ -54,6 +60,13 @@ app.include_router(retrieval_router)
 app.include_router(cognitive_router)
 app.include_router(consolidation_router)
 app.include_router(identity_router)
+app.include_router(predictive_recall_router)
+app.include_router(context_composer_router)
+app.include_router(memory_evolution_router)
+app.include_router(dream_router)
+app.include_router(world_router)
+app.include_router(runtime_router)
+app.include_router(metrics_router)
 
 # Root endpoint
 @app.get("/")

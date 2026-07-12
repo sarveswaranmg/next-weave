@@ -208,7 +208,7 @@ class TestMemoryMerge:
         
         assert consolidated is not None
         assert consolidated.id == memories[0].id  # Primary (highest importance)
-        assert "merged_from" in consolidated.metadata
+        assert "merged_from" in consolidated.extra_metadata
 
 
 class TestConceptGeneration:

@@ -38,15 +38,23 @@ class MemoryStateMachine:
             CognitiveMemoryStateEnum.ACTIVE,  # Can be revived by access
         ],
         CognitiveMemoryStateEnum.ARCHIVED: [
-            CognitiveMemoryStateEnum.ACTIVE,  # Can be retrieved
-        ]
+            CognitiveMemoryStateEnum.ACTIVE,     # Can be retrieved (revival)
+            CognitiveMemoryStateEnum.FORGOTTEN,  # Day 7: soft-forgotten after prolonged archival
+        ],
+        # Day 7: FORGOTTEN is a terminal soft-delete state - never hard
+        # deleted, but revival is still possible (mirrors ARCHIVED -> ACTIVE)
+        # for memories that become relevant again (see ReinforcementRecovery).
+        CognitiveMemoryStateEnum.FORGOTTEN: [
+            CognitiveMemoryStateEnum.ACTIVE,
+        ],
     }
-    
+
     # Time thresholds for state transitions (in days)
     TIME_THRESHOLDS = {
         "active_to_dormant": 30,        # No access for 30 days
         "dormant_to_decay": 60,         # No access for 60 days
         "decay_to_archive": 90,         # No access for 90 days
+        "archive_to_forgotten": 180,    # No access for 180 days (Day 7)
     }
     
     def __init__(self, memory: Memory):
@@ -241,6 +249,8 @@ class MemoryStateMachine:
             return -0.2
         elif new_state == CognitiveMemoryStateEnum.ARCHIVED:
             return -0.05
+        elif new_state == CognitiveMemoryStateEnum.FORGOTTEN:
+            return -0.15
         else:
             return 0.0
     

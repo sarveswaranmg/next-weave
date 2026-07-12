@@ -1,0 +1,89 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: neuroweave-celery-worker
+  namespace: neuroweave
+  labels:
+    app: neuroweave-celery-worker
+spec:
+  replicas: 4
+  selector:
+    matchLabels:
+      app: neuroweave-celery-worker
+  template:
+    metadata:
+      labels:
+        app: neuroweave-celery-worker
+    spec:
+      containers:
+        - name: celery-worker
+          image: neuroweave:latest
+          command: ["celery", "-A", "app.workers.celery_app", "worker", "--loglevel=info", "--concurrency=4"]
+          envFrom:
+            - configMapRef:
+                name: neuroweave-config
+            - secretRef:
+                name: neuroweave-secrets
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "1"
+              memory: "1Gi"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: neuroweave-celery-beat
+  namespace: neuroweave
+  labels:
+    app: neuroweave-celery-beat
+spec:
+  # Exactly one beat scheduler - running more than one would double-fire
+  # every scheduled task (memory evolution, dream mode ticks, etc.)
+  replicas: 1
+  selector:
+    matchLabels:
+      app: neuroweave-celery-beat
+  template:
+    metadata:
+      labels:
+        app: neuroweave-celery-beat
+    spec:
+      containers:
+        - name: celery-beat
+          image: neuroweave:latest
+          command: ["celery", "-A", "app.workers.celery_app", "beat", "--loglevel=info"]
+          envFrom:
+            - configMapRef:
+                name: neuroweave-config
+            - secretRef:
+                name: neuroweave-secrets
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "250m"
+              memory: "512Mi"
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: neuroweave-celery-worker-hpa
+  namespace: neuroweave
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: neuroweave-celery-worker
+  minReplicas: 2
+  maxReplicas: 30
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 75
