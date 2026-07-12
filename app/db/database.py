@@ -8,22 +8,40 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
+def _async_database_url(url: str) -> str:
+    if url.startswith("postgresql://"):
+        return url.replace("postgresql://", "postgresql+asyncpg://", 1)
+    if url.startswith("sqlite://"):
+        return url.replace("sqlite://", "sqlite+aiosqlite://", 1)
+    return url
+
+
+# SQLite's pools (used for local/test runs) don't accept pool_size/max_overflow.
+_is_sqlite = settings.database_url.startswith("sqlite://")
+_pool_kwargs = (
+    {}
+    if _is_sqlite
+    else {
+        "pool_size": settings.database_pool_size,
+        "max_overflow": settings.database_max_overflow,
+    }
+)
+
 # For async operations
 async_engine = create_async_engine(
-    settings.database_url.replace("postgresql://", "postgresql+asyncpg://"),
+    _async_database_url(settings.database_url),
     echo=settings.debug,
-    pool_size=settings.database_pool_size,
-    max_overflow=settings.database_max_overflow,
     pool_pre_ping=True,
+    **_pool_kwargs,
 )
 
 # For synchronous operations
 sync_engine = create_engine(
     settings.database_url,
     echo=settings.debug,
-    pool_size=settings.database_pool_size,
-    max_overflow=settings.database_max_overflow,
     pool_pre_ping=True,
+    **_pool_kwargs,
 )
 
 AsyncSessionLocal = async_sessionmaker(

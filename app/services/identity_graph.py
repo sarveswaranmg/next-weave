@@ -61,10 +61,11 @@ class IdentityGraphService:
             )
         ).all()
 
-        # Add nodes to graph
+        # Add nodes to graph (keyed by string id so lookups from string-typed
+        # API params like trait_id match regardless of the DB driver's UUID type)
         for node in nodes:
             graph.add_node(
-                node.id,
+                str(node.id),
                 type=node.node_type,
                 value=node.node_value,
                 confidence=node.confidence,
@@ -79,13 +80,16 @@ class IdentityGraphService:
 
         # Add edges to graph
         for rel in relationships:
+            source_id = str(rel.source_node_id)
+            target_id = str(rel.target_node_id)
+
             # Skip edges where nodes don't exist
-            if rel.source_node_id not in graph or rel.target_node_id not in graph:
+            if source_id not in graph or target_id not in graph:
                 continue
 
             graph.add_edge(
-                rel.source_node_id,
-                rel.target_node_id,
+                source_id,
+                target_id,
                 type=rel.relationship_type,
                 strength=rel.strength,
                 reinforcement_count=rel.reinforcement_count

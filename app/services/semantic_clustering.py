@@ -186,12 +186,17 @@ class SemanticClusterService:
         """Calculate average pairwise similarity in cluster"""
         if similarity_submatrix.shape[0] < 2:
             return 0.0
-        
+
         # Get upper triangle (excluding diagonal)
         upper_triangle = np.triu_indices(similarity_submatrix.shape[0], k=1)
         similarities = similarity_submatrix[upper_triangle]
-        
-        return float(np.mean(similarities)) if len(similarities) > 0 else 0.0
+
+        if len(similarities) == 0:
+            return 0.0
+
+        # cosine_similarity ranges [-1, 1]; clamp to [0, 1] since this value is
+        # also used directly as a cluster confidence score
+        return max(0.0, float(np.mean(similarities)))
 
     def merge_similar_clusters(
         self,

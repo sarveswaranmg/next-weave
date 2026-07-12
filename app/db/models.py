@@ -1,12 +1,45 @@
 """SQLAlchemy models for NeuroWeave"""
-from sqlalchemy import Column, String, Float, DateTime, Integer, Text, Index, ForeignKey, Enum
-from sqlalchemy.dialects.postgresql import JSON, UUID
+from sqlalchemy import Column, String, Float, DateTime, Integer, Text, Index, ForeignKey, Enum, JSON
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import relationship
+from sqlalchemy.types import CHAR, TypeDecorator
 from datetime import datetime
 import enum
 import uuid
 
 from app.db.database import Base
+
+
+class GUID(TypeDecorator):
+    """Platform-independent UUID type.
+
+    Uses PostgreSQL's native UUID type when available, otherwise stores as a
+    stringified hex CHAR(32) (e.g. for SQLite, used in tests/local dev).
+    """
+
+    impl = CHAR
+    cache_ok = True
+
+    def load_dialect_impl(self, dialect):
+        if dialect.name == "postgresql":
+            return dialect.type_descriptor(PG_UUID(as_uuid=True))
+        return dialect.type_descriptor(CHAR(32))
+
+    def process_bind_param(self, value, dialect):
+        if value is None:
+            return value
+        if dialect.name == "postgresql":
+            return str(value)
+        if not isinstance(value, uuid.UUID):
+            return "%.32x" % uuid.UUID(value).int
+        return "%.32x" % value.int
+
+    def process_result_value(self, value, dialect):
+        if value is None:
+            return value
+        if not isinstance(value, uuid.UUID):
+            value = uuid.UUID(value)
+        return value
 
 
 class MemoryTypeEnum(str, enum.Enum):
@@ -40,7 +73,7 @@ class User(Base):
     """User model"""
     __tablename__ = "users"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(GUID(), primary_key=True, default=uuid.uuid4)
     external_id = Column(String(255), unique=True, nullable=False)
     name = Column(String(255))
     email = Column(String(255), unique=True)
@@ -60,8 +93,8 @@ class Session(Base):
     """Session model - tracks user interactions"""
     __tablename__ = "sessions"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    id = Column(GUID(), primary_key=True, default=uuid.uuid4)
+    user_id = Column(GUID(), ForeignKey("users.id"), nullable=False)
     session_token = Column(String(255), unique=True)
     started_at = Column(DateTime, default=datetime.utcnow)
     ended_at = Column(DateTime)
@@ -80,8 +113,8 @@ class Memory(Base):
     """Core memory model with cognitive scoring dimensions"""
     __tablename__ = "memories"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    id = Column(GUID(), primary_key=True, default=uuid.uuid4)
+    user_id = Column(GUID(), ForeignKey("users.id"), nullable=False)
     memory_type = Column(Enum(MemoryTypeEnum), nullable=False)
     content = Column(Text, nullable=False)
     summary = Column(Text)
@@ -155,8 +188,8 @@ class MemoryEmbedding(Base):
     """Memory embeddings for vector similarity search using pgvector"""
     __tablename__ = "memory_embeddings"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    memory_id = Column(UUID(as_uuid=True), ForeignKey("memories.id"), nullable=False)
+    id = Column(GUID(), primary_key=True, default=uuid.uuid4)
+    memory_id = Column(GUID(), ForeignKey("memories.id"), nullable=False)
     embedding = Column(String)  # pgvector type - stores as string in JSON
     model = Column(String(100), default="text-embedding-3-small")
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -174,8 +207,8 @@ class RetrievalLog(Base):
     """Tracks memory retrieval operations for analytics"""
     __tablename__ = "retrieval_logs"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    id = Column(GUID(), primary_key=True, default=uuid.uuid4)
+    user_id = Column(GUID(), ForeignKey("users.id"), nullable=False)
     query = Column(Text)
     retrieved_memory_ids = Column(JSON)  # List of memory IDs retrieved
     retrieval_latency_ms = Column(Float)
@@ -192,10 +225,10 @@ class MemoryConsolidation(Base):
     """Tracks consolidated memories for future semantic consolidation"""
     __tablename__ = "memory_consolidations"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    id = Column(GUID(), primary_key=True, default=uuid.uuid4)
+    user_id = Column(GUID(), ForeignKey("users.id"), nullable=False)
     source_memory_ids = Column(JSON)  # List of original memory IDs
-    consolidated_memory_id = Column(UUID(as_uuid=True), ForeignKey("memories.id"))
+    consolidated_memory_id = Column(GUID(), ForeignKey("memories.id"))
     consolidation_score = Column(Float)
     created_at = Column(DateTime, default=datetime.utcnow)
 
@@ -218,8 +251,8 @@ class ConceptMemory(Base):
     """
     __tablename__ = "concept_memories"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    id = Column(GUID(), primary_key=True, default=uuid.uuid4)
+    user_id = Column(GUID(), ForeignKey("users.id"), nullable=False)
     concept_name = Column(String(255), nullable=False)
     description = Column(Text)
     
@@ -258,8 +291,8 @@ class MemoryCluster(Base):
     """
     __tablename__ = "memory_clusters"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    id = Column(GUID(), primary_key=True, default=uuid.uuid4)
+    user_id = Column(GUID(), ForeignKey("users.id"), nullable=False)
     cluster_id = Column(String(255), nullable=False)  # Unique cluster identifier
     theme = Column(String(255))  # Inferred theme/topic of cluster
     
@@ -297,11 +330,11 @@ class ConceptRelationship(Base):
     """
     __tablename__ = "concept_relationships"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    id = Column(GUID(), primary_key=True, default=uuid.uuid4)
+    user_id = Column(GUID(), ForeignKey("users.id"), nullable=False)
     
-    source_concept_id = Column(UUID(as_uuid=True), ForeignKey("concept_memories.id"), nullable=False)
-    target_concept_id = Column(UUID(as_uuid=True), ForeignKey("concept_memories.id"), nullable=False)
+    source_concept_id = Column(GUID(), ForeignKey("concept_memories.id"), nullable=False)
+    target_concept_id = Column(GUID(), ForeignKey("concept_memories.id"), nullable=False)
     
     # Relationship type
     relationship_type = Column(String(50), nullable=False)  # supports, reinforces, related_to, derived_from
@@ -332,8 +365,8 @@ class ConsolidationMetrics(Base):
     """
     __tablename__ = "consolidation_metrics"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    id = Column(GUID(), primary_key=True, default=uuid.uuid4)
+    user_id = Column(GUID(), ForeignKey("users.id"), nullable=False)
     
     # Consolidation run metadata
     consolidation_run_id = Column(String(255))  # Identifier for this consolidation run
@@ -403,8 +436,8 @@ class IdentityNode(Base):
     """
     __tablename__ = "identity_nodes"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    id = Column(GUID(), primary_key=True, default=uuid.uuid4)
+    user_id = Column(GUID(), ForeignKey("users.id"), nullable=False)
     
     # Node identity
     node_type = Column(String(50), nullable=False)  # goal, interest, communication, behavior, value, skill
@@ -465,11 +498,11 @@ class IdentityRelationship(Base):
     """
     __tablename__ = "identity_relationships"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    id = Column(GUID(), primary_key=True, default=uuid.uuid4)
+    user_id = Column(GUID(), ForeignKey("users.id"), nullable=False)
     
-    source_node_id = Column(UUID(as_uuid=True), ForeignKey("identity_nodes.id"), nullable=False)
-    target_node_id = Column(UUID(as_uuid=True), ForeignKey("identity_nodes.id"), nullable=False)
+    source_node_id = Column(GUID(), ForeignKey("identity_nodes.id"), nullable=False)
+    target_node_id = Column(GUID(), ForeignKey("identity_nodes.id"), nullable=False)
     
     # Relationship properties
     relationship_type = Column(String(50), nullable=False)  # related_to, reinforces, derived_from, influences, conflicts
@@ -510,10 +543,10 @@ class IdentityHistory(Base):
     """
     __tablename__ = "identity_history"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    id = Column(GUID(), primary_key=True, default=uuid.uuid4)
+    user_id = Column(GUID(), ForeignKey("users.id"), nullable=False)
     
-    node_id = Column(UUID(as_uuid=True), ForeignKey("identity_nodes.id"), nullable=False)
+    node_id = Column(GUID(), ForeignKey("identity_nodes.id"), nullable=False)
     
     # Trait information
     node_type = Column(String(50), nullable=False)  # goal, interest, etc.
@@ -557,8 +590,8 @@ class PredictiveRecallLog(Base):
     """
     __tablename__ = "predictive_recall_logs"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    id = Column(GUID(), primary_key=True, default=uuid.uuid4)
+    user_id = Column(GUID(), ForeignKey("users.id"), nullable=False)
 
     query = Column(Text, nullable=False)
 
@@ -608,8 +641,8 @@ class ContextSnapshot(Base):
     """
     __tablename__ = "context_snapshots"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    id = Column(GUID(), primary_key=True, default=uuid.uuid4)
+    user_id = Column(GUID(), ForeignKey("users.id"), nullable=False)
 
     query = Column(Text, nullable=False)
     detected_goal = Column(String(100))
@@ -646,8 +679,8 @@ class ContextMetrics(Base):
     """
     __tablename__ = "context_metrics"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    snapshot_id = Column(UUID(as_uuid=True), ForeignKey("context_snapshots.id"), nullable=False)
+    id = Column(GUID(), primary_key=True, default=uuid.uuid4)
+    snapshot_id = Column(GUID(), ForeignKey("context_snapshots.id"), nullable=False)
 
     coverage = Column(Float, default=0.0)              # Fraction of required knowledge represented
     redundancy = Column(Float, default=0.0)            # Duplicate/near-duplicate ratio pre-compression
@@ -677,9 +710,9 @@ class MemoryEvent(Base):
     """
     __tablename__ = "memory_events"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    memory_id = Column(UUID(as_uuid=True), ForeignKey("memories.id"), nullable=False)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    id = Column(GUID(), primary_key=True, default=uuid.uuid4)
+    memory_id = Column(GUID(), ForeignKey("memories.id"), nullable=False)
+    user_id = Column(GUID(), ForeignKey("users.id"), nullable=False)
 
     event_type = Column(String(50), nullable=False)  # decay, reinforce, revive, merge, archive, forget
     old_state = Column(String(50))
@@ -721,8 +754,8 @@ class DreamSession(Base):
     """
     __tablename__ = "dream_sessions"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    id = Column(GUID(), primary_key=True, default=uuid.uuid4)
+    user_id = Column(GUID(), ForeignKey("users.id"), nullable=False)
 
     status = Column(Enum(DreamSessionStatusEnum), default=DreamSessionStatusEnum.RUNNING)
     trigger = Column(String(50), default="manual")  # manual, hourly, daily, weekly, idle
@@ -768,13 +801,13 @@ class KnowledgeSynthesis(Base):
     """
     __tablename__ = "knowledge_synthesis"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
-    dream_session_id = Column(UUID(as_uuid=True), ForeignKey("dream_sessions.id"), nullable=True)
+    id = Column(GUID(), primary_key=True, default=uuid.uuid4)
+    user_id = Column(GUID(), ForeignKey("users.id"), nullable=False)
+    dream_session_id = Column(GUID(), ForeignKey("dream_sessions.id"), nullable=True)
 
     source_concept_ids = Column(JSON, default=[])  # List of ConceptMemory UUIDs (as strings)
     source_concept_names = Column(JSON, default=[])
-    new_concept_id = Column(UUID(as_uuid=True), ForeignKey("concept_memories.id"), nullable=True)
+    new_concept_id = Column(GUID(), ForeignKey("concept_memories.id"), nullable=True)
     new_concept = Column(String(255), nullable=False)
     reasoning = Column(Text)
 
@@ -798,9 +831,9 @@ class IdentityEvolutionEvent(Base):
     """
     __tablename__ = "identity_evolution_events"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
-    dream_session_id = Column(UUID(as_uuid=True), ForeignKey("dream_sessions.id"), nullable=True)
+    id = Column(GUID(), primary_key=True, default=uuid.uuid4)
+    user_id = Column(GUID(), ForeignKey("users.id"), nullable=False)
+    dream_session_id = Column(GUID(), ForeignKey("dream_sessions.id"), nullable=True)
 
     old_identity = Column(String(255))
     new_identity = Column(String(255), nullable=False)
@@ -857,8 +890,8 @@ class WorldEntity(Base):
     """
     __tablename__ = "world_entities"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    id = Column(GUID(), primary_key=True, default=uuid.uuid4)
+    user_id = Column(GUID(), ForeignKey("users.id"), nullable=False)
 
     entity_type = Column(Enum(WorldEntityTypeEnum), nullable=False)
     entity_name = Column(String(255), nullable=False)
@@ -893,11 +926,11 @@ class WorldRelationship(Base):
     """
     __tablename__ = "world_relationships"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    id = Column(GUID(), primary_key=True, default=uuid.uuid4)
+    user_id = Column(GUID(), ForeignKey("users.id"), nullable=False)
 
-    source_entity_id = Column(UUID(as_uuid=True), ForeignKey("world_entities.id"), nullable=False)
-    target_entity_id = Column(UUID(as_uuid=True), ForeignKey("world_entities.id"), nullable=False)
+    source_entity_id = Column(GUID(), ForeignKey("world_entities.id"), nullable=False)
+    target_entity_id = Column(GUID(), ForeignKey("world_entities.id"), nullable=False)
 
     relationship_type = Column(String(50), nullable=False)  # uses, stores, depends_on, migrates_to, works_on, deployed_to, part_of, blocks, related_to
     strength = Column(Float, default=0.5)   # 0.0-1.0: weighted edge confidence
@@ -925,9 +958,9 @@ class Project(Base):
     """
     __tablename__ = "projects"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
-    world_entity_id = Column(UUID(as_uuid=True), ForeignKey("world_entities.id"), nullable=True)
+    id = Column(GUID(), primary_key=True, default=uuid.uuid4)
+    user_id = Column(GUID(), ForeignKey("users.id"), nullable=False)
+    world_entity_id = Column(GUID(), ForeignKey("world_entities.id"), nullable=True)
 
     project_name = Column(String(255), nullable=False)
     status = Column(Enum(ProjectStatusEnum), default=ProjectStatusEnum.ACTIVE)
@@ -962,9 +995,9 @@ class ArchitecturalDecision(Base):
     """
     __tablename__ = "architectural_decisions"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
-    project_id = Column(UUID(as_uuid=True), ForeignKey("projects.id"), nullable=True)
+    id = Column(GUID(), primary_key=True, default=uuid.uuid4)
+    user_id = Column(GUID(), ForeignKey("users.id"), nullable=False)
+    project_id = Column(GUID(), ForeignKey("projects.id"), nullable=True)
 
     decision = Column(Text, nullable=False)
     reason = Column(Text)
@@ -996,8 +1029,8 @@ class BenchmarkRun(Base):
     """
     __tablename__ = "benchmark_runs"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    id = Column(GUID(), primary_key=True, default=uuid.uuid4)
+    user_id = Column(GUID(), ForeignKey("users.id"), nullable=True)
 
     strategy = Column(String(100), nullable=False)   # no_memory, raw_history, neuroweave, mem0, zep, ...
     model = Column(String(100))
@@ -1039,8 +1072,8 @@ class RuntimeMetrics(Base):
     """
     __tablename__ = "runtime_metrics"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)  # null = global rollup
+    id = Column(GUID(), primary_key=True, default=uuid.uuid4)
+    user_id = Column(GUID(), ForeignKey("users.id"), nullable=True)  # null = global rollup
 
     memory_count = Column(Integer, default=0)
     concept_count = Column(Integer, default=0)

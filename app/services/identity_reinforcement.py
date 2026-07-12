@@ -201,7 +201,7 @@ class IdentityReinforcementService:
         return {
             "source_node_id": source_node_id,
             "traits_affected": len(propagated),
-            "max_depth_reached": max(d[1] for d in [(n, d) for n, d in queue] if queue),
+            "max_depth_reached": max((n["depth"] for n in propagated), default=0),
             "propagated_nodes": propagated
         }
 

@@ -96,7 +96,7 @@ class TestMemoryReinforcementEngine:
         result = engine.reinforce_memory("test-id")
         
         # Decay should be reduced (0.10 * 0.8 = 0.08)
-        assert result["decay_rate"] == 0.08
+        assert result["decay_rate"] == pytest.approx(0.08)
     
     def test_concept_detection(self):
         """Test that concepts are correctly detected"""

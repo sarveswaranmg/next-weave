@@ -208,7 +208,7 @@ class TestStateTransitionWeights:
         
         # Should decrease strength
         assert success == True
-        assert mock_memory.memory_strength == 0.7  # 0.8 - 0.1
+        assert mock_memory.memory_strength == pytest.approx(0.7)  # 0.8 - 0.1
 
 
 if __name__ == "__main__":

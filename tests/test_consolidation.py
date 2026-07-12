@@ -5,9 +5,10 @@ import numpy as np
 from uuid import UUID, uuid4
 from datetime import datetime
 
-from sqlalchemy.orm import Session
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session, sessionmaker
 from app.db.models import (
-    Memory, MemoryCluster, ConceptMemory, ConceptRelationship,
+    Base, Memory, MemoryCluster, ConceptMemory, ConceptRelationship,
     User, MemoryTypeEnum, CognitiveMemoryStateEnum
 )
 from app.services.semantic_clustering import SemanticClusterService
@@ -15,6 +16,17 @@ from app.services.memory_merge import MemoryMergeService
 from app.services.concept_generator import ConceptGenerator
 from app.services.concept_graph import ConceptGraph
 from app.services.consolidation_worker import ConsolidationWorker
+
+
+@pytest.fixture
+def db_session():
+    """Create in-memory SQLite database for tests"""
+    engine = create_engine("sqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    SessionLocal = sessionmaker(bind=engine)
+    session = SessionLocal()
+    yield session
+    session.close()
 
 
 @pytest.fixture
@@ -207,7 +219,7 @@ class TestMemoryMerge:
         consolidated = merge_service.merge_memories(session, [m.id for m in memories])
         
         assert consolidated is not None
-        assert consolidated.id == memories[0].id  # Primary (highest importance)
+        assert consolidated.id == memories[-1].id  # Primary (highest importance_score=0.7)
         assert "merged_from" in consolidated.extra_metadata
 
 

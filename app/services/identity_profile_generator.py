@@ -75,9 +75,21 @@ class IdentityProfileGenerator:
             "skills": []
         }
 
+        # IdentityNode.node_type is stored singular ("goal", "interest", ...);
+        # profile_data buckets are plural category names.
+        node_type_to_category = {
+            "goal": "goals",
+            "interest": "interests",
+            "communication": "communication",
+            "behavior": "behaviors",
+            "value": "values",
+            "skill": "skills",
+        }
+
         for node in nodes:
-            if node.node_type in profile_data:
-                profile_data[node.node_type].append({
+            category = node_type_to_category.get(node.node_type)
+            if category:
+                profile_data[category].append({
                     "value": node.node_value,
                     "confidence": node.confidence,
                     "importance": node.importance,
@@ -190,7 +202,7 @@ class IdentityProfileGenerator:
         sorted_traits = sorted(comm_traits, key=lambda x: x["confidence"], reverse=True)
 
         return {
-            "primary_style": sorted_traits[0]["value"],
+            "primary": sorted_traits[0]["value"],
             "preferences": [t["value"] for t in sorted_traits],
             "confidence": sorted_traits[0]["confidence"] if sorted_traits else 0.0
         }

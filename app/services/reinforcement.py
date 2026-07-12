@@ -146,14 +146,15 @@ class MemoryReinforcementEngine:
     def _detect_concept_match(new_content: str, existing_content: str) -> list:
         """Detect which concepts appear in both contents"""
         matched = []
+        new_lower = new_content.lower()
         existing_lower = existing_content.lower()
-        
+
         for concept_group, keywords in MemoryReinforcementEngine.CONCEPT_GROUPS.items():
-            for keyword in keywords:
-                if keyword in new_content and keyword in existing_lower:
-                    matched.append(concept_group)
-                    break
-        
+            new_has_concept = any(keyword in new_lower for keyword in keywords)
+            existing_has_concept = any(keyword in existing_lower for keyword in keywords)
+            if new_has_concept and existing_has_concept:
+                matched.append(concept_group)
+
         return list(set(matched))  # Remove duplicates
     
     @staticmethod

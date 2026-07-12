@@ -480,9 +480,21 @@ Confidence should reflect how strongly the context supports the trait."""
             "skills": []
         }
 
+        # IdentityNode.node_type is stored singular ("goal", "interest", ...);
+        # profile buckets are plural category names.
+        node_type_to_category = {
+            "goal": "goals",
+            "interest": "interests",
+            "communication": "communication",
+            "behavior": "behaviors",
+            "value": "values",
+            "skill": "skills",
+        }
+
         for node in nodes:
-            if node.node_type in profile:
-                profile[node.node_type].append({
+            category = node_type_to_category.get(node.node_type)
+            if category:
+                profile[category].append({
                     "value": node.node_value,
                     "confidence": node.confidence,
                     "importance": node.importance,

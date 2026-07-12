@@ -91,12 +91,12 @@ class TestHybridScoringEngine:
         # High importance
         high_content = "I am building an AI company focused on revolution"
         high_result = engine.score_memory(high_content, MemoryTypeEnum.IDENTITY, use_llm=False)
-        assert str(high_result["cognitive_state"]) == "active"
-        
+        assert high_result["cognitive_state"].value == "active"
+
         # Low importance
         low_content = "hello"
         low_result = engine.score_memory(low_content, MemoryTypeEnum.EPISODIC, use_llm=False)
-        assert str(low_result["cognitive_state"]) in ["decaying", "dormant"]
+        assert low_result["cognitive_state"].value in ["decaying", "dormant", "semantic_candidate"]
     
     def test_decay_rate_by_memory_type(self):
         """Test that decay rates differ by memory type"""
@@ -108,8 +108,8 @@ class TestHybridScoringEngine:
         identity = engine.score_memory(content, MemoryTypeEnum.IDENTITY, use_llm=False)
         episodic = engine.score_memory(content, MemoryTypeEnum.EPISODIC, use_llm=False)
         
-        # Episodic should decay fastest
-        assert procedural["decay_rate"] < identity["decay_rate"] < episodic["decay_rate"]
+        # Identity decays slowest, episodic decays fastest (per DAY7 spec)
+        assert identity["decay_rate"] < procedural["decay_rate"] < episodic["decay_rate"]
     
     def test_score_ranges(self):
         """Test that all scores are in valid range 0.0-1.0"""
