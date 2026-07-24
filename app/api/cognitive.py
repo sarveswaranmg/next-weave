@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from uuid import UUID
 
-from app.db.database import get_db_session
+from app.db.database import get_db
 from app.schemas.memory import (
     MemoryScoreRequest,
     MemoryScoreResponse,
@@ -33,7 +33,7 @@ router = APIRouter(
 @router.post("/score", response_model=MemoryScoreResponse)
 async def analyze_and_score_memory(
     request: MemoryScoreRequest,
-    session: Session = Depends(get_db_session),
+    session: Session = Depends(get_db),
 ) -> MemoryScoreResponse:
     """
     Analyze a memory and compute cognitive importance scores
@@ -109,7 +109,7 @@ async def analyze_and_score_memory(
 @router.post("/reinforce", response_model=MemoryReinforceResponse)
 async def reinforce_memory(
     request: MemoryReinforceRequest,
-    session: Session = Depends(get_db_session),
+    session: Session = Depends(get_db),
 ) -> MemoryReinforceResponse:
     """
     Reinforce a memory when concepts repeat or memory is accessed
@@ -166,7 +166,7 @@ async def reinforce_memory(
 async def get_memory_importance(
     memory_id: UUID,
     user_id: UUID,
-    session: Session = Depends(get_db_session),
+    session: Session = Depends(get_db),
 ) -> MemoryImportanceResponse:
     """Get detailed importance and cognitive information for a specific memory"""
     try:
@@ -210,7 +210,7 @@ async def get_memory_importance(
 @router.get("/stats", response_model=MemoryCognitiveStatsResponse)
 async def get_cognitive_stats(
     user_id: UUID,
-    session: Session = Depends(get_db_session),
+    session: Session = Depends(get_db),
 ) -> MemoryCognitiveStatsResponse:
     """Get comprehensive cognitive memory statistics for a user"""
     try:

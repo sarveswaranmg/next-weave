@@ -21,7 +21,7 @@ depends_on = None
 def upgrade() -> None:
     dream_status_enum = postgresql.ENUM(
         'RUNNING', 'COMPLETED', 'CANCELLED', 'FAILED',
-        name='dreamsessionstatusenum'
+        name='dreamsessionstatusenum', create_type=False,
     )
     dream_status_enum.create(op.get_bind(), checkfirst=True)
 
@@ -29,7 +29,7 @@ def upgrade() -> None:
         'dream_sessions',
         sa.Column('id', postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column('user_id', postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column('status', sa.Enum('RUNNING', 'COMPLETED', 'CANCELLED', 'FAILED', name='dreamsessionstatusenum'), nullable=True, server_default='RUNNING'),
+        sa.Column('status', dream_status_enum, nullable=True, server_default='RUNNING'),
         sa.Column('trigger', sa.String(50), server_default='manual'),
         sa.Column('started_at', sa.DateTime(), default=sa.func.now()),
         sa.Column('finished_at', sa.DateTime(), nullable=True),

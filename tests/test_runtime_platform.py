@@ -17,24 +17,6 @@ from app.services.runtime_metrics_service import RuntimeMetricsService
 from app.services.data_deletion_service import DataDeletionService
 
 
-@pytest.fixture
-def session():
-    engine = create_engine("sqlite:///:memory:")
-    Base.metadata.create_all(engine)
-    SessionLocal = sessionmaker(bind=engine)
-    s = SessionLocal()
-    yield s
-    s.close()
-
-
-@pytest.fixture
-def user(session):
-    u = User(id=uuid4(), external_id=f"u-{uuid4()}", name="Test User")
-    session.add(u)
-    session.commit()
-    return u
-
-
 class TestLLMProviders:
     """Model-agnostic memory: every provider implements the same interface"""
 
@@ -68,7 +50,7 @@ class TestRuntimeOrchestrator:
     def test_chat_runs_full_pipeline_and_stores_memory(self, session, user):
         orchestrator = RuntimeOrchestrator(session)
         result = orchestrator.chat(
-            user_id=user.id, message="Help me design a distributed cache.",
+            user_id=user.id, tenant_id=user.tenant_id, message="Help me design a distributed cache.",
             provider="echo", schedule_background=False,
         )
 
@@ -81,23 +63,46 @@ class TestRuntimeOrchestrator:
         # user message + assistant response both stored
         assert len(memories) == 2
 
-    def test_chat_creates_user_if_missing(self, session):
+    def test_chat_creates_user_if_missing(self, session, tenant):
         new_user_id = uuid4()
         orchestrator = RuntimeOrchestrator(session)
-        result = orchestrator.chat(user_id=new_user_id, message="Hello", provider="echo", schedule_background=False)
+        result = orchestrator.chat(
+            user_id=new_user_id, tenant_id=tenant.id, message="Hello", provider="echo", schedule_background=False,
+        )
         assert result["user_id"] == new_user_id
         assert session.query(User).filter(User.id == new_user_id).first() is not None
 
+    def test_chat_rejects_user_id_owned_by_another_tenant(self, session, user, tenant):
+        from app.db.models import Tenant
+        from fastapi import HTTPException
+        other_tenant = Tenant(name="Other Tenant", email="other@example.com")
+        session.add(other_tenant)
+        session.commit()
+
+        orchestrator = RuntimeOrchestrator(session)
+        with pytest.raises(HTTPException) as exc_info:
+            orchestrator.chat(
+                user_id=user.id, tenant_id=other_tenant.id, message="Hello",
+                provider="echo", schedule_background=False,
+            )
+        assert exc_info.value.status_code == 403
+
     def test_chat_without_memory_stores_nothing(self, session, user):
         orchestrator = RuntimeOrchestrator(session)
-        orchestrator.chat(user_id=user.id, message="Hello", provider="echo", memory=False, schedule_background=False)
+        orchestrator.chat(
+            user_id=user.id, tenant_id=user.tenant_id, message="Hello",
+            provider="echo", memory=False, schedule_background=False,
+        )
         assert session.query(Memory).filter(Memory.user_id == user.id).count() == 0
 
     def test_background_scheduling_never_fails_the_chat(self, session, user):
         """No Celery broker is running in tests - scheduling must degrade
         gracefully, not raise."""
         orchestrator = RuntimeOrchestrator(session)
-        result = orchestrator.chat(user_id=user.id, message="Hello", provider="echo", schedule_background=True)
+        result = orchestrator.chat(
+            user_id=user.id, tenant_id=user.tenant_id, message="Hello",
+            provider="echo", schedule_background=True,
+        )
         assert result["response"] is not None
 
 

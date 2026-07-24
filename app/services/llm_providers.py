@@ -18,6 +18,20 @@ from app.core.config import settings
 logger = logging.getLogger(__name__)
 
 
+class ProviderCredentialError(Exception):
+    """
+    Raised (by callers, not by `get_provider()` itself) when a tenant's
+    explicitly-configured BYOK credential fails to produce a working
+    provider. `get_provider()` keeps its existing echo-fallback behavior
+    for the "nothing configured at all" case (see
+    `test_openai_without_key_falls_back_to_echo`) - a tenant whose stored
+    key is invalid/expired needs a clear error instead, which
+    `RuntimeOrchestrator.chat()` raises this for when `provider_kwargs`
+    was supplied but initialization still silently fell back to echo.
+    """
+    pass
+
+
 class LLMProvider(ABC):
     """Common interface every model provider must implement."""
 

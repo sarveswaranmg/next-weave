@@ -50,7 +50,7 @@ docker-up:
 	docker-compose up -d
 	@echo "Waiting for services..."
 	sleep 10
-	docker-compose exec neuroweave alembic upgrade head
+	docker-compose exec neuroweave alembic -c migrations/alembic.ini upgrade head
 	@echo "✅ NeuroWeave is running at http://localhost:8000"
 
 docker-down:
@@ -60,7 +60,7 @@ docker-logs:
 	docker-compose logs -f neuroweave
 
 migrate:
-	alembic upgrade head
+	alembic -c migrations/alembic.ini upgrade head
 
 db-create:
 	createdb -U postgres neuroweave

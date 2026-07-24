@@ -7,7 +7,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from app.db.database import get_db_session
+from app.db.database import get_db
 from app.db.models import Memory, PredictiveRecallLog
 from app.schemas.predictive_recall import (
     GoalDetectionRequest,
@@ -85,7 +85,7 @@ async def classify_intent(request: IntentClassificationRequest) -> IntentClassif
 @router.post("/utility-score", response_model=UtilityScoreResponse)
 async def score_utility(
     request: UtilityScoreRequest,
-    session: Session = Depends(get_db_session),
+    session: Session = Depends(get_db),
 ) -> UtilityScoreResponse:
     """Score candidate memories for predicted usefulness against a query (not similarity)"""
     try:
@@ -131,7 +131,7 @@ async def score_utility(
 @router.post("/context/assemble", response_model=ContextAssembleResponse)
 async def assemble_context(
     request: ContextAssembleRequest,
-    session: Session = Depends(get_db_session),
+    session: Session = Depends(get_db),
 ) -> ContextAssembleResponse:
     """Assemble a compact reasoning context from an explicit set of memories"""
     try:
@@ -182,7 +182,7 @@ async def assemble_context(
 @router.post("/predictive-recall", response_model=PredictiveRecallResponse)
 async def predictive_recall(
     request: PredictiveRecallRequest,
-    session: Session = Depends(get_db_session),
+    session: Session = Depends(get_db),
 ) -> PredictiveRecallResponse:
     """
     Run the full predictive recall pipeline.
@@ -223,7 +223,7 @@ async def predictive_recall(
 async def get_retrieval_explanation(
     user_id: UUID,
     recall_id: Optional[UUID] = None,
-    session: Session = Depends(get_db_session),
+    session: Session = Depends(get_db),
 ) -> RetrievalExplanationResponse:
     """
     Get the decision trail for a predictive recall run: why each memory was

@@ -1,7 +1,7 @@
 """Add cognitive scoring dimensions to memories table (Day 2)
 
 Revision ID: 002_add_cognitive_scoring
-Revises: 001_initial
+Revises: 001
 Create Date: 2026-05-14 00:00:00.000000
 
 """
@@ -12,7 +12,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = '002_add_cognitive_scoring'
-down_revision = '001_initial'
+down_revision = '001'
 branch_labels = None
 depends_on = None
 
@@ -28,7 +28,7 @@ def upgrade() -> None:
         'DORMANT',
         'DECAYING',
         'ARCHIVED',
-        name='cognitivememorystateenum'
+        name='cognitivememorystateenum', create_type=False,
     )
     cognitive_state_enum.create(op.get_bind(), checkfirst=True)
     
@@ -40,7 +40,7 @@ def upgrade() -> None:
     op.add_column('memories', sa.Column('temporal_persistence_score', sa.Float(), nullable=True, server_default='0.5'))
     
     # Add cognitive state and strength
-    op.add_column('memories', sa.Column('cognitive_state', sa.Enum('ACTIVE', 'REINFORCED', 'SEMANTIC_CANDIDATE', 'DORMANT', 'DECAYING', 'ARCHIVED', name='cognitivememorystateenum'), nullable=True, server_default='ACTIVE'))
+    op.add_column('memories', sa.Column('cognitive_state', cognitive_state_enum, nullable=True, server_default='ACTIVE'))
     op.add_column('memories', sa.Column('memory_strength', sa.Float(), nullable=True, server_default='0.5'))
     op.add_column('memories', sa.Column('decay_rate', sa.Float(), nullable=True, server_default='0.05'))
     

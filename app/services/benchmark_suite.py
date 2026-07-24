@@ -22,7 +22,7 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session
 
-from app.db.models import BenchmarkRun, User, Memory, MemoryTypeEnum
+from app.db.models import BenchmarkRun, Tenant, User, Memory, MemoryTypeEnum
 from app.services.token_budget_optimizer import TokenBudgetOptimizer
 from app.services.context_composer import ContextComposer
 from app.services.cognitive_scoring import score_memory
@@ -150,17 +150,27 @@ class NeuroBench:
             self.session.refresh(r)
         return results
 
-    def run_dataset(self, dataset_name: str = "synthetic", user_count: int = 3, seed: int = 42) -> List[BenchmarkRun]:
+    # Well-known tenant for synthetic benchmark data - NeuroBench/the
+    # continuous-evaluation pipeline runs independently of any specific
+    # real customer, so synthetic users are grouped under one dedicated
+    # internal tenant rather than requiring every caller to supply one.
+    _BENCHMARK_TENANT_EMAIL = "benchmark@internal.neuroweave"
+
+    def run_dataset(
+        self, dataset_name: str = "synthetic", user_count: int = 3, seed: int = 42,
+        tenant_id: Optional[UUID] = None,
+    ) -> List[BenchmarkRun]:
         """Generate a synthetic dataset and benchmark every strategy
         against every synthetic user's accumulated context — the
         continuous-evaluation entry point (see 'Continuous Evaluation
         Pipeline' in DAY10_RUNTIME_PLATFORM.md)."""
         generator = DatasetGenerator(seed=seed)
         synthetic_users = generator.generate_users(count=user_count)
+        effective_tenant_id = tenant_id or self._get_or_create_benchmark_tenant().id
 
         all_results = []
         for synthetic_user in synthetic_users:
-            user = self._materialize_user(synthetic_user)
+            user = self._materialize_user(synthetic_user, effective_tenant_id)
             history = []
             for turn in synthetic_user.turns:
                 history.append(turn.content)
@@ -171,10 +181,19 @@ class NeuroBench:
 
         return all_results
 
-    def _materialize_user(self, synthetic_user: SyntheticUser) -> User:
+    def _get_or_create_benchmark_tenant(self) -> Tenant:
+        tenant = self.session.query(Tenant).filter(Tenant.email == self._BENCHMARK_TENANT_EMAIL).first()
+        if not tenant:
+            tenant = Tenant(name="NeuroBench synthetic data", email=self._BENCHMARK_TENANT_EMAIL)
+            self.session.add(tenant)
+            self.session.commit()
+            self.session.refresh(tenant)
+        return tenant
+
+    def _materialize_user(self, synthetic_user: SyntheticUser, tenant_id: UUID) -> User:
         user = self.session.query(User).filter(User.external_id == synthetic_user.external_id).first()
         if not user:
-            user = User(external_id=synthetic_user.external_id, name=synthetic_user.persona)
+            user = User(external_id=synthetic_user.external_id, name=synthetic_user.persona, tenant_id=tenant_id)
             self.session.add(user)
             self.session.commit()
             self.session.refresh(user)

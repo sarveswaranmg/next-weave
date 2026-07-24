@@ -25,7 +25,7 @@ class TestMemoryReinforcementEngine:
         
         # Should be successful
         assert result["success"] == True
-        assert result["new_strength"] == 0.6  # 0.5 + 0.1
+        assert result["new_strength"] == pytest.approx(0.6)  # 0.5 + 0.1
     
     def test_reinforce_capped_at_1_0(self):
         """Test that memory strength is capped at 1.0"""
@@ -43,7 +43,7 @@ class TestMemoryReinforcementEngine:
         result = engine.reinforce_memory("test-id", strength_increase=0.1)
         
         # Should not exceed 1.0
-        assert result["new_strength"] == 1.0
+        assert result["new_strength"] == pytest.approx(1.0)
     
     def test_reinforcement_increases_count(self):
         """Test that reinforcement increments the count"""

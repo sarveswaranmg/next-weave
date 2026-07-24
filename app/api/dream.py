@@ -7,7 +7,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
-from app.db.database import get_db_session
+from app.db.database import get_db
 from app.db.models import DreamSession, DreamSessionStatusEnum
 from app.schemas.dream import (
     DreamStartRequest,
@@ -38,7 +38,7 @@ router = APIRouter(prefix="/dream", tags=["dream-mode"])
 @router.post("/start", response_model=DreamSessionResponse)
 async def start_dream(
     request: DreamStartRequest,
-    session: Session = Depends(get_db_session),
+    session: Session = Depends(get_db),
 ) -> DreamSessionResponse:
     """
     Start (run) a full offline consolidation session: replay, pattern
@@ -58,7 +58,7 @@ async def start_dream(
 @router.post("/stop", response_model=DreamStopResponse)
 async def stop_dream(
     request: DreamStopRequest,
-    session: Session = Depends(get_db_session),
+    session: Session = Depends(get_db),
 ) -> DreamStopResponse:
     """Cooperatively cancel a running dream session."""
     try:
@@ -87,7 +87,7 @@ async def stop_dream(
 async def get_dream_status(
     user_id: UUID,
     dream_session_id: Optional[UUID] = None,
-    session: Session = Depends(get_db_session),
+    session: Session = Depends(get_db),
 ) -> DreamSessionResponse:
     """Get the status of a dream session (defaults to the most recent one for the user)."""
     try:
@@ -111,7 +111,7 @@ async def get_dream_status(
 async def get_dream_history(
     user_id: UUID,
     limit: int = Query(default=20, ge=1, le=100),
-    session: Session = Depends(get_db_session),
+    session: Session = Depends(get_db),
 ) -> DreamHistoryResponse:
     """List past dream sessions for a user, most recent first."""
     try:
@@ -131,7 +131,7 @@ async def get_dream_history(
 @router.post("/replay", response_model=DreamReplayResponse)
 async def run_replay(
     request: DreamReplayRequest,
-    session: Session = Depends(get_db_session),
+    session: Session = Depends(get_db),
 ) -> DreamReplayResponse:
     """Run a standalone replay pass: select and rebuild understanding for high-value memories."""
     try:
@@ -153,7 +153,7 @@ async def run_replay(
 @router.post("/refine", response_model=DreamRefineResponse)
 async def run_refine(
     request: DreamRefineRequest,
-    session: Session = Depends(get_db_session),
+    session: Session = Depends(get_db),
 ) -> DreamRefineResponse:
     """Run a standalone concept refinement pass: merge, generalize, strengthen, retire."""
     try:
@@ -177,7 +177,7 @@ async def run_refine(
 @router.post("/synthesize", response_model=DreamSynthesizeResponse)
 async def run_synthesize(
     request: DreamSynthesizeRequest,
-    session: Session = Depends(get_db_session),
+    session: Session = Depends(get_db),
 ) -> DreamSynthesizeResponse:
     """Run a standalone knowledge synthesis pass: generate new higher-order concepts."""
     try:
@@ -199,7 +199,7 @@ async def run_synthesize(
 async def get_dream_statistics(
     user_id: UUID,
     limit: int = Query(default=100, ge=1, le=1000),
-    session: Session = Depends(get_db_session),
+    session: Session = Depends(get_db),
 ) -> DreamStatisticsResponse:
     """Aggregated Dream Mode observability metrics for a user."""
     try:

@@ -20,13 +20,14 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session
 
-from app.db.models import Memory, MemoryTypeEnum, User
+from app.db.models import Memory, MemoryTypeEnum
 from app.core.config import settings
 from app.services.cognitive_scoring import score_memory
 from app.services.context_composer import ContextComposer
 from app.services.predictive_recall_pipeline import PredictiveRecallPipeline
 from app.services.world_model_pipeline import WorldModelPipeline
-from app.services.llm_providers import get_provider
+from app.services.llm_providers import get_provider, ProviderCredentialError
+from app.services.tenancy import get_or_create_owned_user
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +42,7 @@ class RuntimeOrchestrator:
     def chat(
         self,
         user_id: UUID,
+        tenant_id: UUID,
         message: str,
         provider: Optional[str] = None,
         model: Optional[str] = None,
@@ -50,15 +52,22 @@ class RuntimeOrchestrator:
         context_composer: bool = True,
         token_budget: Optional[int] = None,
         schedule_background: bool = True,
+        provider_kwargs: Optional[Dict] = None,
     ) -> Dict:
-        """Run one chat turn through the full cognitive pipeline."""
+        """
+        Run one chat turn through the full cognitive pipeline.
+        `provider_kwargs` (e.g. `{"api_key": ..., "base_url": ...}`) is
+        resolved by the caller (see `app.services.credential_resolver`)
+        from the tenant's stored BYOK credential, if any - this method
+        just threads it through to `get_provider()` unchanged.
+        """
         start = time.time()
         stage_latency: Dict[str, float] = {}
         provider_name = provider or settings.runtime_default_provider
         model_name = model or settings.runtime_default_model
         token_budget = token_budget or settings.runtime_default_token_budget
 
-        self._ensure_user(user_id)
+        get_or_create_owned_user(self.session, user_id, tenant_id)
 
         stored_memory = None
         if memory:
@@ -98,7 +107,15 @@ class RuntimeOrchestrator:
             stage_latency["predictive_recall"] = (time.time() - t0) * 1000
 
         t0 = time.time()
-        llm_provider = get_provider(provider_name)
+        llm_provider = get_provider(provider_name, **(provider_kwargs or {}))
+        if provider_kwargs and llm_provider.name == "echo" and (provider_name or "").lower() != "echo":
+            # A tenant-specific BYOK credential was supplied but provider
+            # construction still silently fell back to echo (bad/expired
+            # key, unreachable base_url, etc.) - that must be a clear
+            # error to the tenant, not a silent echo response.
+            raise ProviderCredentialError(
+                f"Stored credential for provider '{provider_name}' failed to initialize a working client"
+            )
         completion = llm_provider.complete(system_prompt, message, model=model_name)
         stage_latency["llm_completion"] = (time.time() - t0) * 1000
 
@@ -128,14 +145,6 @@ class RuntimeOrchestrator:
             "stage_latency_ms": stage_latency,
             "total_latency_ms": total_latency_ms,
         }
-
-    def _ensure_user(self, user_id: UUID) -> User:
-        user = self.session.query(User).filter(User.id == user_id).first()
-        if not user:
-            user = User(id=user_id, external_id=str(user_id))
-            self.session.add(user)
-            self.session.commit()
-        return user
 
     def _ingest(
         self, user_id: UUID, content: str, memory_type: MemoryTypeEnum = MemoryTypeEnum.EPISODIC

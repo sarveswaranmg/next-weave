@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: pgvector/pgvector:pg15-latest
+    image: pgvector/pgvector:pg15
     container_name: neuroweave-postgres
     environment:
       POSTGRES_DB: neuroweave
@@ -38,6 +38,7 @@ services:
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       RUNTIME_API_KEY: ${RUNTIME_API_KEY:-}
+      CREDENTIAL_ENCRYPTION_KEY: ${CREDENTIAL_ENCRYPTION_KEY:-}
       DEBUG: "false"
       ENVIRONMENT: development
     ports:

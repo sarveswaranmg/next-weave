@@ -17,6 +17,12 @@ depends_on = None
 
 
 def upgrade() -> None:
+    # Add CONCEPT to the existing native Postgres memorytypeenum type (Day
+    # 3 introduces MemoryTypeEnum.CONCEPT). Must run outside the value's
+    # own transaction on older Postgres, but is safe here since it's not
+    # referenced by any DML in this same migration.
+    op.execute("ALTER TYPE memorytypeenum ADD VALUE IF NOT EXISTS 'CONCEPT'")
+
     # Create concept_memories table
     op.create_table(
         'concept_memories',

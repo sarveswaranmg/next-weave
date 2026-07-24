@@ -140,3 +140,67 @@ class DashboardResponse(BaseModel):
 class DeleteUserResponse(BaseModel):
     user_id: UUID
     deleted_counts: Dict[str, int]
+
+
+class ApiKeyCreateRequest(BaseModel):
+    """Request for POST /runtime/keys - mint a new key for the caller's own tenant."""
+    name: Optional[str] = None
+    role: str = "developer"
+
+
+class ApiKeyCreateResponse(BaseModel):
+    id: UUID
+    api_key: str = Field(..., description="Shown once - store it now, it cannot be recovered")
+    key_prefix: str
+    role: str
+    name: Optional[str] = None
+
+
+class ApiKeyInfo(BaseModel):
+    id: UUID
+    key_prefix: str
+    role: str
+    name: Optional[str] = None
+    created_at: datetime
+    last_used_at: Optional[datetime] = None
+    revoked_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
+class ApiKeyListResponse(BaseModel):
+    keys: List[ApiKeyInfo]
+
+
+class RevokeApiKeyResponse(BaseModel):
+    id: UUID
+    revoked: bool
+
+
+class ProviderCredentialRequest(BaseModel):
+    """Request for POST /runtime/credentials - store or replace a BYOK
+    provider credential for the caller's own tenant."""
+    provider: str
+    api_key: str
+    base_url_override: Optional[str] = None
+
+
+class ProviderCredentialInfo(BaseModel):
+    """Never includes the key itself - only whether one is configured."""
+    provider: str
+    base_url_override: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class ProviderCredentialListResponse(BaseModel):
+    credentials: List[ProviderCredentialInfo]
+
+
+class DeleteProviderCredentialResponse(BaseModel):
+    provider: str
+    deleted: bool

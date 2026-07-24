@@ -25,31 +25,6 @@ from app.services.dream_scheduler import DreamScheduler
 from app.services.dream_pipeline import DreamPipeline
 
 
-@pytest.fixture
-def session():
-    engine = create_engine("sqlite:///:memory:")
-    Base.metadata.create_all(engine, tables=[
-        User.__table__, Memory.__table__, MemoryEmbedding.__table__,
-        ConceptMemory.__table__, ConceptRelationship.__table__,
-        IdentityNode.__table__, IdentityRelationship.__table__,
-        MemoryEvent.__table__, DreamSession.__table__,
-        KnowledgeSynthesis.__table__, IdentityEvolutionEvent.__table__,
-        PredictiveRecallLog.__table__, ContextSnapshot.__table__,
-    ])
-    SessionLocal = sessionmaker(bind=engine)
-    s = SessionLocal()
-    yield s
-    s.close()
-
-
-@pytest.fixture
-def user(session):
-    u = User(id=uuid4(), external_id=f"u-{uuid4()}", name="Test User")
-    session.add(u)
-    session.commit()
-    return u
-
-
 def make_memory(session, user_id, content="Some memory content", memory_type=MemoryTypeEnum.SEMANTIC,
                  importance_score=0.6, reinforcement_score=0.5, memory_strength=0.6,
                  cognitive_state=CognitiveMemoryStateEnum.ACTIVE, days_since_access=1):

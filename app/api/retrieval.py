@@ -7,7 +7,7 @@ from uuid import UUID
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 
-from app.db.database import get_db_session
+from app.db.database import get_db
 from app.db.models import MemoryTypeEnum
 from app.schemas.memory import (
     MemoryRetrievalRequest,
@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 @router.post("/retrieve", response_model=MemoryRetrievalResponse)
 def retrieve_memories(
     request: MemoryRetrievalRequest,
-    session: Session = Depends(get_db_session),
+    session: Session = Depends(get_db),
 ) -> MemoryRetrievalResponse:
     """
     Retrieve relevant memories for a query.
@@ -110,7 +110,7 @@ def retrieve_memories(
 @router.post("/reconstruct", response_model=MemoryReconstructResponse)
 def reconstruct_context(
     request: MemoryReconstructRequest,
-    session: Session = Depends(get_db_session),
+    session: Session = Depends(get_db),
 ) -> MemoryReconstructResponse:
     """
     Reconstruct compressed context for LLM injection.

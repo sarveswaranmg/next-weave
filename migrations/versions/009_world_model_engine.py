@@ -25,17 +25,17 @@ PROJECT_STATUSES = ['ACTIVE', 'PAUSED', 'COMPLETED', 'ARCHIVED']
 
 
 def upgrade() -> None:
-    world_entity_type_enum = postgresql.ENUM(*WORLD_ENTITY_TYPES, name='worldentitytypeenum')
+    world_entity_type_enum = postgresql.ENUM(*WORLD_ENTITY_TYPES, name='worldentitytypeenum', create_type=False)
     world_entity_type_enum.create(op.get_bind(), checkfirst=True)
 
-    project_status_enum = postgresql.ENUM(*PROJECT_STATUSES, name='projectstatusenum')
+    project_status_enum = postgresql.ENUM(*PROJECT_STATUSES, name='projectstatusenum', create_type=False)
     project_status_enum.create(op.get_bind(), checkfirst=True)
 
     op.create_table(
         'world_entities',
         sa.Column('id', postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column('user_id', postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column('entity_type', sa.Enum(*WORLD_ENTITY_TYPES, name='worldentitytypeenum'), nullable=False),
+        sa.Column('entity_type', world_entity_type_enum, nullable=False),
         sa.Column('entity_name', sa.String(255), nullable=False),
         sa.Column('description', sa.Text(), nullable=True),
         sa.Column('confidence', sa.Float(), server_default='0.5'),
@@ -86,7 +86,7 @@ def upgrade() -> None:
         sa.Column('user_id', postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column('world_entity_id', postgresql.UUID(as_uuid=True), nullable=True),
         sa.Column('project_name', sa.String(255), nullable=False),
-        sa.Column('status', sa.Enum(*PROJECT_STATUSES, name='projectstatusenum'), server_default='ACTIVE'),
+        sa.Column('status', project_status_enum, server_default='ACTIVE'),
         sa.Column('current_phase', sa.String(255), nullable=True),
         sa.Column('progress', sa.Float(), server_default='0.0'),
         sa.Column('next_step', sa.Text(), nullable=True),

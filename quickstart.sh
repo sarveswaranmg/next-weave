@@ -80,7 +80,7 @@ start_services() {
 run_migrations() {
     echo ""
     echo "Running database migrations..."
-    docker-compose exec -T neuroweave alembic upgrade head
+    docker-compose exec -T neuroweave alembic -c migrations/alembic.ini upgrade head
     echo "✓ Migrations completed"
 }
 

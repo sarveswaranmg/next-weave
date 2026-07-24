@@ -6,7 +6,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
-from app.db.database import get_db_session
+from app.db.database import get_db
 from app.db.models import Project, WorldEntity, WorldRelationship
 from app.schemas.world import (
     WorldUpdateRequest,
@@ -42,7 +42,7 @@ router = APIRouter(tags=["world-model"])
 @router.post("/world/update", response_model=WorldUpdateResponse)
 async def update_world_model(
     request: WorldUpdateRequest,
-    session: Session = Depends(get_db_session),
+    session: Session = Depends(get_db),
 ) -> WorldUpdateResponse:
     """
     Run the full world model pipeline over a piece of text: entity
@@ -72,7 +72,7 @@ async def update_world_model(
 @router.get("/world/model", response_model=WorldModelResponse)
 async def get_world_model(
     user_id: UUID,
-    session: Session = Depends(get_db_session),
+    session: Session = Depends(get_db),
 ) -> WorldModelResponse:
     """Get a full snapshot of the user's world model."""
     try:
@@ -104,7 +104,7 @@ async def get_world_model(
 @router.get("/projects", response_model=ProjectListResponse)
 async def list_projects(
     user_id: UUID,
-    session: Session = Depends(get_db_session),
+    session: Session = Depends(get_db),
 ) -> ProjectListResponse:
     """List all tracked projects for a user."""
     try:
@@ -124,7 +124,7 @@ async def list_projects(
 async def get_project(
     project_id: UUID,
     user_id: UUID,
-    session: Session = Depends(get_db_session),
+    session: Session = Depends(get_db),
 ) -> ProjectResponse:
     """Get a single project's full record."""
     try:
@@ -144,7 +144,7 @@ async def get_project(
 @router.post("/decision", response_model=DecisionResponse)
 async def record_decision(
     request: DecisionRequest,
-    session: Session = Depends(get_db_session),
+    session: Session = Depends(get_db),
 ) -> DecisionResponse:
     """Manually record an architectural decision, with reason and impact."""
     try:
@@ -165,7 +165,7 @@ async def get_timeline(
     user_id: UUID,
     project_id: Optional[UUID] = None,
     limit: int = Query(default=50, ge=1, le=200),
-    session: Session = Depends(get_db_session),
+    session: Session = Depends(get_db),
 ) -> TimelineResponse:
     """Get the past/present/future timeline for a user or a specific project."""
     try:
@@ -182,7 +182,7 @@ async def get_dependencies(
     user_id: UUID,
     entity_id: UUID,
     max_depth: int = Query(default=3, ge=1, le=6),
-    session: Session = Depends(get_db_session),
+    session: Session = Depends(get_db),
 ) -> DependenciesResponse:
     """Find what an entity (typically a project) depends on, transitively."""
     try:
@@ -200,7 +200,7 @@ async def get_dependencies(
 @router.post("/world/predict", response_model=PredictionResponse)
 async def predict_world(
     request: WorldPredictRequest,
-    session: Session = Depends(get_db_session),
+    session: Session = Depends(get_db),
 ) -> PredictionResponse:
     """Predict likely next task, blockers, dependencies, and missing knowledge/docs."""
     try:

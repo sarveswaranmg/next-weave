@@ -147,7 +147,12 @@ class Settings(BaseSettings):
     runtime_default_provider: str = "openai"
     runtime_default_model: str = "gpt-4"
     runtime_default_token_budget: int = 800
-    runtime_api_key: str = ""              # If set, POST /runtime/* requires X-API-Key header matching this
+    runtime_api_key: str = ""              # Optional seed value: scripts/bootstrap_tenant.py hashes this into
+                                            # the first ApiKey row for a zero-downtime upgrade path from the old
+                                            # single-shared-secret model. Not checked at request time anymore -
+                                            # auth is now per-tenant via the api_keys table (app.core.security).
+    credential_encryption_key: str = ""    # Fernet key (Fernet.generate_key()) encrypting stored BYOK provider
+                                            # credentials at rest. Required once any ProviderCredential is stored.
     runtime_version: str = "1.0.0-day10"
 
     class Config:

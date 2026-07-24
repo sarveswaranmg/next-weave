@@ -35,6 +35,61 @@ jobs:
       - name: Run Python SDK tests
         run: pytest sdk/python/tests/ -v
 
+  migrations:
+    # The SQLite-backed `test` job never exercises Alembic at all (it uses
+    # Base.metadata.create_all() directly, and several migrations use
+    # Postgres-only DDL - native enum types, ALTER TYPE ADD VALUE - that
+    # SQLite can't even express). Run the real migration chain against real
+    # Postgres so a broken migration can't ship undetected again.
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg15
+        env:
+          POSTGRES_DB: neuroweave
+          POSTGRES_USER: neuroweave
+          POSTGRES_PASSWORD: neuroweave
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U neuroweave"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://neuroweave:neuroweave@localhost:5432/neuroweave
+      RUNTIME_API_KEY: ci-legacy-key-for-bootstrap-test
+      # migrations/env.py imports `app.core.config` - alembic doesn't put
+      # the repo root on sys.path by itself, so this must be set explicitly.
+      PYTHONPATH: .
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run alembic upgrade head against real Postgres
+        run: alembic -c migrations/alembic.ini upgrade head
+
+      - name: Verify the legacy-key bootstrap path landed a tenant + api_key
+        run: |
+          python -c "
+          from sqlalchemy import create_engine, text
+          engine = create_engine('postgresql://neuroweave:neuroweave@localhost:5432/neuroweave')
+          with engine.connect() as conn:
+              count = conn.execute(text('SELECT COUNT(*) FROM api_keys')).scalar()
+              assert count == 1, f'expected 1 bootstrapped api_key, got {count}'
+          print('Bootstrap migration verified.')
+          "
+
   typescript-sdk:
     runs-on: ubuntu-latest
     steps:

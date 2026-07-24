@@ -23,25 +23,6 @@ from app.services.world_traversal import WorldTraversalService
 from app.services.world_model_pipeline import WorldModelPipeline
 
 
-@pytest.fixture
-def session():
-    engine = create_engine("sqlite:///:memory:")
-    Base.metadata.create_all(engine, tables=[
-        User.__table__, WorldEntity.__table__, WorldRelationship.__table__,
-        Project.__table__, ArchitecturalDecision.__table__,
-    ])
-    SessionLocal = sessionmaker(bind=engine)
-    s = SessionLocal()
-    yield s
-    s.close()
-
-
-@pytest.fixture
-def user(session):
-    u = User(id=uuid4(), external_id=f"u-{uuid4()}", name="Test User")
-    session.add(u)
-    session.commit()
-    return u
 
 
 class TestEntityExtractor:

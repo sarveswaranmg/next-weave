@@ -186,18 +186,22 @@ class TestScoringFormula:
         total = sum(weights)
         assert abs(total - 1.0) < 0.001
     
-    def test_uniform_scoring_distribution(self):
-        """Test that uniform dimension scores produce middle importance"""
+    def test_uniform_scoring_distribution(self, monkeypatch):
+        """Uniform 0.5 dimension scores must combine to 0.5 importance -
+        exercises the engine's actual weighted-combination code (previously
+        this test never called the engine at all and could never fail)."""
         engine = HybridScoringEngine(use_llm=False)
-        
-        # Mock heuristic with all equal scores
-        class MockScorer:
-            pass
-        
-        # All 0.5
-        expected_importance = 0.5
+
+        for dimension in (
+            "_score_future_utility", "_score_identity_impact", "_score_emotional_salience",
+            "_score_reinforcement", "_score_temporal_persistence",
+        ):
+            monkeypatch.setattr(engine, dimension, lambda content, base: 0.5)
+
+        result = engine.score_memory("irrelevant content", MemoryTypeEnum.EPISODIC, use_llm=False)
+
         # 0.5 * 0.30 + 0.5 * 0.25 + 0.5 * 0.15 + 0.5 * 0.15 + 0.5 * 0.15 = 0.5
-        assert expected_importance == 0.5
+        assert result["importance_score"] == pytest.approx(0.5)
 
 
 if __name__ == "__main__":

@@ -47,7 +47,11 @@ def upgrade() -> None:
         'memories',
         sa.Column('id', postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column('user_id', postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column('memory_type', sa.Enum('episodic', 'semantic', 'identity', 'procedural', name='memorytypeenum'), nullable=False),
+        # Labels are the Python enum members' .name (uppercase), matching
+        # SQLAlchemy's default Enum(MemoryTypeEnum) storage convention used
+        # everywhere else in this codebase (cognitivememorystateenum,
+        # dreamsessionstatusenum, etc.) - NOT the lowercase .value strings.
+        sa.Column('memory_type', sa.Enum('EPISODIC', 'SEMANTIC', 'IDENTITY', 'PROCEDURAL', name='memorytypeenum'), nullable=False),
         sa.Column('content', sa.Text(), nullable=False),
         sa.Column('summary', sa.Text(), nullable=True),
         sa.Column('importance_score', sa.Float(), nullable=False),

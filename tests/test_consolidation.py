@@ -19,36 +19,6 @@ from app.services.consolidation_worker import ConsolidationWorker
 
 
 @pytest.fixture
-def db_session():
-    """Create in-memory SQLite database for tests"""
-    engine = create_engine("sqlite:///:memory:")
-    Base.metadata.create_all(engine)
-    SessionLocal = sessionmaker(bind=engine)
-    session = SessionLocal()
-    yield session
-    session.close()
-
-
-@pytest.fixture
-def session(db_session):
-    """Database session for tests"""
-    return db_session
-
-
-@pytest.fixture
-def test_user(session):
-    """Create test user"""
-    user = User(
-        external_id="test_user",
-        name="Test User",
-        email="test@example.com",
-    )
-    session.add(user)
-    session.commit()
-    return user
-
-
-@pytest.fixture
 def test_memories(session, test_user):
     """Create test memories for consolidation"""
     memories = []

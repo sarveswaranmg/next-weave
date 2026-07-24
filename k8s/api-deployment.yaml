@@ -17,7 +17,13 @@ spec:
     spec:
       containers:
         - name: neuroweave-api
-          image: neuroweave:latest
+          # Placeholder tag - a mutable `:latest` can't support rollback or
+          # let you verify which commit is actually running. Substitute a
+          # real tag at deploy time, e.g.:
+          #   sed -i "s|neuroweave:IMAGE_TAG|neuroweave:${GIT_SHA}|" k8s/api-deployment.yaml k8s/worker-deployment.yaml
+          # or adopt Kustomize (`kustomize edit set image`) if you also want
+          # per-environment overlays (staging/prod) - see k8s/README.md.
+          image: neuroweave:IMAGE_TAG
           command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
           ports:
             - containerPort: 8000

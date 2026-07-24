@@ -144,7 +144,7 @@ class TestMemoryStateMachine:
         new_strength = state_machine.apply_strength_decay(decay_steps=1)
         
         # Should be reduced
-        assert new_strength == 0.9
+        assert new_strength == pytest.approx(0.9)
     
     def test_multiple_decay_steps(self):
         """Test multiple decay steps"""
@@ -192,7 +192,7 @@ class TestStateTransitionWeights:
         
         # Should increase strength
         assert success == True
-        assert mock_memory.memory_strength == 0.7  # 0.5 + 0.2
+        assert mock_memory.memory_strength == pytest.approx(0.7)  # 0.5 + 0.2
     
     def test_demotion_decreases_strength(self):
         """Test that demotions decrease memory strength"""

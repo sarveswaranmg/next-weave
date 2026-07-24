@@ -6,7 +6,10 @@ metadata:
   labels:
     app: neuroweave-celery-worker
 spec:
-  replicas: 4
+  # Matches the HPA's minReplicas below - the HPA owns replica count once
+  # installed, so a higher static value here is just misleading (it'll
+  # scale down to 2 shortly after startup under no load anyway).
+  replicas: 2
   selector:
     matchLabels:
       app: neuroweave-celery-worker
@@ -17,7 +20,8 @@ spec:
     spec:
       containers:
         - name: celery-worker
-          image: neuroweave:latest
+          # See k8s/api-deployment.yaml for why this isn't `:latest`.
+          image: neuroweave:IMAGE_TAG
           command: ["celery", "-A", "app.workers.celery_app", "worker", "--loglevel=info", "--concurrency=4"]
           envFrom:
             - configMapRef:
@@ -53,7 +57,8 @@ spec:
     spec:
       containers:
         - name: celery-beat
-          image: neuroweave:latest
+          # See k8s/api-deployment.yaml for why this isn't `:latest`.
+          image: neuroweave:IMAGE_TAG
           command: ["celery", "-A", "app.workers.celery_app", "beat", "--loglevel=info"]
           envFrom:
             - configMapRef:

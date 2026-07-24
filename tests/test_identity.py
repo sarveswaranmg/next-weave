@@ -22,32 +22,6 @@ from app.services.identity_profile_generator import IdentityProfileGenerator
 from app.services.identity_context_builder import IdentityAwareContextBuilder
 
 
-# Test database setup
-@pytest.fixture(scope="function")
-def db_session():
-    """Create in-memory SQLite database for tests"""
-    engine = create_engine("sqlite:///:memory:")
-    Base.metadata.create_all(engine)
-    Session = sessionmaker(bind=engine)
-    session = Session()
-    yield session
-    session.close()
-
-
-@pytest.fixture(scope="function")
-def test_user(db_session):
-    """Create test user"""
-    user = User(
-        id=uuid.uuid4(),
-        external_id="test_user_001",
-        name="Test User",
-        email="test@example.com"
-    )
-    db_session.add(user)
-    db_session.commit()
-    return user
-
-
 @pytest.fixture(scope="function")
 def test_memories(db_session, test_user):
     """Create test memories for extraction"""

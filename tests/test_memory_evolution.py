@@ -23,26 +23,6 @@ from app.services.memory_health_monitor import MemoryHealthService
 from app.services.memory_evolution_pipeline import MemoryEvolutionPipeline
 
 
-@pytest.fixture
-def session():
-    engine = create_engine("sqlite:///:memory:")
-    Base.metadata.create_all(engine, tables=[
-        User.__table__, Memory.__table__, ConceptMemory.__table__,
-        ConceptRelationship.__table__, IdentityNode.__table__,
-        IdentityRelationship.__table__, MemoryEvent.__table__,
-    ])
-    SessionLocal = sessionmaker(bind=engine)
-    s = SessionLocal()
-    yield s
-    s.close()
-
-
-@pytest.fixture
-def user(session):
-    u = User(id=uuid4(), external_id=f"u-{uuid4()}", name="Test User")
-    session.add(u)
-    session.commit()
-    return u
 
 
 def make_memory(

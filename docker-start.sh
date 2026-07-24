@@ -18,7 +18,7 @@ sleep 10
 
 # Run migrations
 echo "Running database migrations..."
-docker-compose exec -T neuroweave alembic upgrade head
+docker-compose exec -T neuroweave alembic -c migrations/alembic.ini upgrade head
 
 echo "✅ NeuroWeave is running!"
 echo "📚 API Documentation: http://localhost:8000/docs"

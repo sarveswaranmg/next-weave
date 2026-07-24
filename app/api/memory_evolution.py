@@ -7,7 +7,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
-from app.db.database import get_db_session
+from app.db.database import get_db
 from app.db.models import Memory, MemoryEvent, CognitiveMemoryStateEnum
 from app.schemas.memory_evolution import (
     MemoryEvolveRequest,
@@ -42,7 +42,7 @@ router = APIRouter(prefix="/memory", tags=["memory-evolution"])
 @router.post("/evolve", response_model=MemoryEvolveResponse)
 async def evolve_memory(
     request: MemoryEvolveRequest,
-    session: Session = Depends(get_db_session),
+    session: Session = Depends(get_db),
 ) -> MemoryEvolveResponse:
     """
     Run one full memory evolution pass: decay evaluation, duplicate
@@ -61,7 +61,7 @@ async def evolve_memory(
 @router.post("/decay", response_model=MemoryDecayResponse)
 async def decay_memory(
     request: MemoryDecayRequest,
-    session: Session = Depends(get_db_session),
+    session: Session = Depends(get_db),
 ) -> MemoryDecayResponse:
     """Apply multi-factor decay evaluation to a user's memories."""
     try:
@@ -107,7 +107,7 @@ async def decay_memory(
 @router.post("/archive", response_model=MemoryArchiveResponse)
 async def archive_memory(
     request: MemoryArchiveRequest,
-    session: Session = Depends(get_db_session),
+    session: Session = Depends(get_db),
 ) -> MemoryArchiveResponse:
     """Manually archive a specific memory with an explicit reason."""
     try:
@@ -139,7 +139,7 @@ async def archive_memory(
 @router.post("/revive", response_model=MemoryReviveResponse)
 async def revive_memory(
     request: MemoryReviveRequest,
-    session: Session = Depends(get_db_session),
+    session: Session = Depends(get_db),
 ) -> MemoryReviveResponse:
     """
     Revive memories: pass `memory_id` to revive a specific memory directly,
@@ -176,7 +176,7 @@ async def revive_memory(
 async def get_memory_lifecycle(
     user_id: UUID,
     memory_id: UUID,
-    session: Session = Depends(get_db_session),
+    session: Session = Depends(get_db),
 ) -> MemoryLifecycleResponse:
     """Get full lifecycle status for a single memory."""
     try:
@@ -213,7 +213,7 @@ async def get_memory_lifecycle(
 @router.get("/health", response_model=CognitiveHealthResponse)
 async def get_memory_health(
     user_id: UUID,
-    session: Session = Depends(get_db_session),
+    session: Session = Depends(get_db),
 ) -> CognitiveHealthResponse:
     """Get the overall Cognitive Health Score and its contributing metrics."""
     try:
@@ -230,7 +230,7 @@ async def get_memory_events(
     memory_id: Optional[UUID] = None,
     event_type: Optional[str] = None,
     limit: int = Query(default=50, ge=1, le=500),
-    session: Session = Depends(get_db_session),
+    session: Session = Depends(get_db),
 ) -> MemoryEventsResponse:
     """Get the lifecycle event audit trail for a user (optionally filtered)."""
     try:
@@ -268,7 +268,7 @@ async def get_memory_events(
 @router.get("/entropy", response_model=MemoryEntropyResponse)
 async def get_memory_entropy(
     user_id: UUID,
-    session: Session = Depends(get_db_session),
+    session: Session = Depends(get_db),
 ) -> MemoryEntropyResponse:
     """Get the store-wide memory entropy (disorder) breakdown for a user."""
     try:

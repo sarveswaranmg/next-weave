@@ -7,7 +7,7 @@ from uuid import UUID
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 
-from app.db.database import get_db_session
+from app.db.database import get_db
 from app.schemas.memory import (
     MemoryIngestRequest,
     MemoryIngestResponse,
@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 @router.post("/ingest", response_model=MemoryIngestResponse)
 def ingest_memories(
     request: MemoryIngestRequest,
-    session: Session = Depends(get_db_session),
+    session: Session = Depends(get_db),
 ) -> MemoryIngestResponse:
     """
     Ingest conversation and extract memories.

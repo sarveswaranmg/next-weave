@@ -60,7 +60,16 @@ git clone <this-repo-url>
 cd NextWeave
 cp .env.example .env            # set OPENAI_API_KEY at minimum
 docker compose up -d            # postgres, redis, api, celery-worker, celery-beat
-docker compose exec neuroweave alembic upgrade head
+docker compose exec neuroweave alembic -c migrations/alembic.ini upgrade head
+```
+
+NeuroWeave is multi-tenant: every `/runtime/*` request authenticates with an `X-API-Key`
+belonging to a tenant (see [Multi-Tenancy & Auth](docs/DOCUMENTATION.md#multi-tenancy--auth)).
+Bootstrap your first tenant + key:
+
+```bash
+docker compose exec neuroweave python scripts/bootstrap_tenant.py --name "My Company" --email me@example.com
+# prints: Tenant (tenant_id): ...  API key (shown once, store it now): nw_live_...
 ```
 
 The API is now live at `http://localhost:8000` — try `/docs` for interactive Swagger, or:
@@ -68,13 +77,14 @@ The API is now live at `http://localhost:8000` — try `/docs` for interactive S
 ```bash
 curl -X POST localhost:8000/runtime/chat \
   -H "Content-Type: application/json" \
+  -H "X-API-Key: nw_live_..." \
   -d '{"user_id": "00000000-0000-0000-0000-000000000001", "message": "I prefer concise answers and I work with FastAPI and PostgreSQL.", "provider": "echo"}'
 ```
 
 Without Docker:
 ```bash
 pip install -r requirements.txt
-alembic upgrade head
+alembic -c migrations/alembic.ini upgrade head
 uvicorn app.main:app --reload
 ```
 

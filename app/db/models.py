@@ -10,6 +10,18 @@ import uuid
 from app.db.database import Base
 
 
+class Role(str, enum.Enum):
+    """
+    RBAC role, assigned per ApiKey (see `ApiKey` below). Defined here
+    rather than in `app.core.security` so `app.core.security` can import
+    models normally (ApiKey, Role) without creating a circular import -
+    `app.db.models` must not depend on `app.core.security`.
+    """
+    ADMIN = "admin"
+    DEVELOPER = "developer"
+    READONLY = "readonly"
+
+
 class GUID(TypeDecorator):
     """Platform-independent UUID type.
 
@@ -69,11 +81,37 @@ class CognitiveMemoryStateEnum(str, enum.Enum):
     FORGOTTEN = "forgotten"                    # Day 7: soft-forgotten - retained but never retrieved
 
 
+class Tenant(Base):
+    """
+    A paying NeuroWeave customer/account - the SaaS billing/auth boundary.
+    One Tenant manages many `User` rows (e.g. a customer support bot built
+    on NeuroWeave has one Tenant - the company running the bot - and one
+    `User` per end-user the bot has ever talked to, identified by whatever
+    `user_id` the tenant's own app passes to `CognitiveAgent.chat()`).
+    `ApiKey` and `ProviderCredential` (BYOK) both belong to a Tenant, not a
+    User, since a single tenant's key/credentials must be usable across all
+    of *their* users.
+    """
+    __tablename__ = "tenants"
+
+    id = Column(GUID(), primary_key=True, default=uuid.uuid4)
+    name = Column(String(255))
+    email = Column(String(255), unique=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    users = relationship("User", back_populates="tenant", cascade="all, delete-orphan")
+
+
 class User(Base):
-    """User model"""
+    """
+    An end-user of a Tenant's application - the subject of all memory/
+    identity/world-model data. Not the SaaS customer itself; see `Tenant`.
+    """
     __tablename__ = "users"
 
     id = Column(GUID(), primary_key=True, default=uuid.uuid4)
+    tenant_id = Column(GUID(), ForeignKey("tenants.id"), nullable=False)
     external_id = Column(String(255), unique=True, nullable=False)
     name = Column(String(255))
     email = Column(String(255), unique=True)
@@ -81,11 +119,72 @@ class User(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
+    tenant = relationship("Tenant", back_populates="users")
     memories = relationship("Memory", back_populates="user", cascade="all, delete-orphan")
     sessions = relationship("Session", back_populates="user", cascade="all, delete-orphan")
 
     __table_args__ = (
         Index("idx_user_external_id", "external_id"),
+        Index("idx_user_tenant_id", "tenant_id"),
+    )
+
+
+class ApiKey(Base):
+    """
+    A Tenant's API credential. Every request authenticates to exactly one
+    ApiKey, which resolves to exactly one `tenant_id` - every `user_id`
+    referenced in a request must belong to that tenant (enforced via
+    `app.services.tenancy`), which is what stops one tenant from reading or
+    deleting another tenant's end-user data by guessing/enumerating UUIDs.
+    This replaces the old single global `RUNTIME_API_KEY` shared-secret
+    model: keys are per-tenant, individually revocable, and only the
+    salted hash is stored (never the plaintext secret, which is shown to
+    the caller exactly once at creation time).
+    """
+    __tablename__ = "api_keys"
+
+    id = Column(GUID(), primary_key=True, default=uuid.uuid4)
+    tenant_id = Column(GUID(), ForeignKey("tenants.id"), nullable=False)
+    key_prefix = Column(String(12), nullable=False)  # safe to display/log, e.g. "nw_live_ab12"
+    hashed_secret = Column(String(255), nullable=False)  # sha256 hex digest of the full key
+    # values_callable: persist Role's lowercase .value ("admin") rather than
+    # SQLAlchemy's default of the Python enum member's .name ("ADMIN") -
+    # matches the Postgres enum type's actual values (see migration 011).
+    role = Column(
+        Enum(Role, name="apikeyrole", values_callable=lambda enum_cls: [e.value for e in enum_cls]),
+        nullable=False, default=Role.DEVELOPER,
+    )
+    name = Column(String(255))  # user-facing label, e.g. "CI key"
+    created_at = Column(DateTime, default=datetime.utcnow)
+    last_used_at = Column(DateTime, nullable=True)
+    revoked_at = Column(DateTime, nullable=True)
+
+    __table_args__ = (
+        Index("idx_api_key_tenant_id", "tenant_id"),
+        Index("idx_api_key_prefix", "key_prefix"),
+    )
+
+
+class ProviderCredential(Base):
+    """
+    Per-tenant, per-provider LLM API credential (bring-your-own-key),
+    encrypted at rest via `app/core/crypto.py`. One row per (tenant_id,
+    provider) so a tenant can store, e.g., both an OpenAI and an Anthropic
+    key, shared across all of that tenant's users, and select between them
+    per-request via `ChatRequest.provider`.
+    """
+    __tablename__ = "provider_credentials"
+
+    id = Column(GUID(), primary_key=True, default=uuid.uuid4)
+    tenant_id = Column(GUID(), ForeignKey("tenants.id"), nullable=False)
+    provider = Column(String(50), nullable=False)
+    encrypted_api_key = Column(Text, nullable=False)
+    base_url_override = Column(String(500), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    __table_args__ = (
+        Index("idx_provider_cred_tenant_provider", "tenant_id", "provider", unique=True),
     )
 
 

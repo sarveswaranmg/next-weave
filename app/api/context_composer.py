@@ -7,7 +7,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
-from app.db.database import get_db_session
+from app.db.database import get_db
 from app.db.models import Memory, ContextSnapshot
 from app.core.config import settings
 from app.schemas.context_composer import (
@@ -89,7 +89,7 @@ def _score_explicit_memories(
 @router.post("/compose", response_model=ContextComposeResponse)
 async def compose_context(
     request: ContextComposeRequest,
-    session: Session = Depends(get_db_session),
+    session: Session = Depends(get_db),
 ) -> ContextComposeResponse:
     """
     Run the full Cognitive Context Composer pipeline: goal detection,
@@ -132,7 +132,7 @@ async def compose_context(
 @router.post("/evaluate", response_model=ContextEvaluateResponse)
 async def evaluate_context(
     request: ContextEvaluateRequest,
-    session: Session = Depends(get_db_session),
+    session: Session = Depends(get_db),
 ) -> ContextEvaluateResponse:
     """Evaluate the quality of a specific memory set as a candidate context."""
     try:
@@ -187,7 +187,7 @@ async def evaluate_context(
 @router.post("/compress", response_model=ContextCompressResponse)
 async def compress_context(
     request: ContextCompressRequest,
-    session: Session = Depends(get_db_session),
+    session: Session = Depends(get_db),
 ) -> ContextCompressResponse:
     """Compress a specific memory set: dedup, merge concepts, fit to token budget."""
     try:
@@ -225,7 +225,7 @@ async def compress_context(
 @router.post("/narrative", response_model=ContextNarrativeResponse)
 async def generate_narrative(
     request: ContextNarrativeRequest,
-    session: Session = Depends(get_db_session),
+    session: Session = Depends(get_db),
 ) -> ContextNarrativeResponse:
     """Generate a coherent narrative + structured state from a specific memory set."""
     try:
@@ -265,7 +265,7 @@ async def generate_narrative(
 @router.post("/gaps", response_model=ContextGapsResponse)
 async def detect_knowledge_gaps(
     request: ContextGapsRequest,
-    session: Session = Depends(get_db_session),
+    session: Session = Depends(get_db),
 ) -> ContextGapsResponse:
     """Detect knowledge gaps implied by the query but not covered by retained memory."""
     try:
@@ -295,7 +295,7 @@ async def detect_knowledge_gaps(
 async def get_context_history(
     user_id: UUID,
     limit: int = Query(default=20, ge=1, le=100),
-    session: Session = Depends(get_db_session),
+    session: Session = Depends(get_db),
 ) -> ContextHistoryResponse:
     """List past Cognitive Context Composer runs for a user, most recent first."""
     try:
@@ -327,7 +327,7 @@ async def get_context_history(
 async def get_context_metrics(
     user_id: UUID,
     limit: int = Query(default=100, ge=1, le=1000),
-    session: Session = Depends(get_db_session),
+    session: Session = Depends(get_db),
 ) -> ContextMetricsAggregateResponse:
     """Aggregated CCC observability metrics for a user."""
     try:
