@@ -13,7 +13,7 @@ pip install -r requirements.txt
 cp .env.example .env   # set OPENAI_API_KEY at minimum
 docker compose up -d postgres redis
 alembic upgrade head
-uvicorn app.main:app --reload
+uvicorn neurowave_engine.main:app --reload
 ```
 
 Run the test suite before and after your change:

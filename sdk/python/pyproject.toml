@@ -13,6 +13,7 @@ dependencies = [
 
 [project.optional-dependencies]
 langchain = ["langchain-core>=0.1.0"]
+embedded = ["neurowave-engine"]
 dev = ["pytest>=7.4.0"]
 
 [build-system]

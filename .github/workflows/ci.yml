@@ -59,7 +59,7 @@ jobs:
     env:
       DATABASE_URL: postgresql://neuroweave:neuroweave@localhost:5432/neuroweave
       RUNTIME_API_KEY: ci-legacy-key-for-bootstrap-test
-      # migrations/env.py imports `app.core.config` - alembic doesn't put
+      # migrations/env.py imports `neurowave_engine.core.config` - alembic doesn't put
       # the repo root on sys.path by itself, so this must be set explicitly.
       PYTHONPATH: .
     steps:
@@ -132,8 +132,8 @@ jobs:
           python -c "
           from sqlalchemy import create_engine
           from sqlalchemy.orm import sessionmaker
-          from app.db.database import Base
-          from app.services.benchmark_suite import NeuroBench
+          from neurowave_engine.db.database import Base
+          from neurowave_engine.services.benchmark_suite import NeuroBench
 
           engine = create_engine('sqlite:///./ci_bench.db')
           Base.metadata.create_all(engine)

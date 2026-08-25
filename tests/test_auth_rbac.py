@@ -1,6 +1,6 @@
 """
 HTTP-layer tests for the multi-tenant auth/RBAC/ownership model
-(app.core.security, app.services.tenancy). Everything else in this suite
+(neurowave_engine.core.security, neurowave_engine.services.tenancy). Everything else in this suite
 exercises services directly against a session; this file is the one place
 that drives requests through the real FastAPI dependency chain (TestClient
 + a dependency override on `get_db`), since that's the only way to catch
@@ -10,10 +10,10 @@ etc.) rather than just the underlying service logic.
 import pytest
 from fastapi.testclient import TestClient
 
-from app.core.security import generate_api_key
-from app.db.database import get_db
-from app.db.models import ApiKey, Role, Tenant
-from app.main import app
+from neurowave_engine.core.security import generate_api_key
+from neurowave_engine.db.database import get_db
+from neurowave_engine.db.models import ApiKey, Role, Tenant
+from neurowave_engine.main import app
 
 
 @pytest.fixture

@@ -1,5 +1,5 @@
 [project]
-name = "neuroweave"
+name = "neurowave-engine"
 version = "1.0.0"
 description = "Cognitive Memory Engine and Runtime Platform for AI Agents"
 readme = "README.md"
@@ -9,10 +9,55 @@ authors = [
     {name = "NeuroWeave Contributors"},
 ]
 keywords = ["ai", "memory", "cognitive", "llm", "embeddings", "agents", "rag"]
+# Lean core: everything the cognitive pipeline itself needs (works fully
+# embedded, against local SQLite, with zero external services). Server-only
+# concerns (a real Postgres deployment, the async broker, the ASGI server)
+# are the `server` extra below - `neurowave_engine.db.database` builds its
+# engines lazily specifically so importing the engine never requires
+# `psycopg2-binary`/`asyncpg` to be installed, let alone buildable (both
+# are notoriously fragile to build from source without local Postgres dev
+# headers - exactly the kind of surprise install failure this split avoids
+# for an embedded-only caller).
+dependencies = [
+    "fastapi==0.104.1",
+    "sqlalchemy==2.0.23",
+    "aiosqlite==0.19.0",
+    "greenlet==3.0.1",
+    "pydantic==2.5.0",
+    "pydantic-settings==2.1.0",
+    "openai==1.3.6",
+    "python-dotenv==1.0.0",
+    "httpx==0.25.2",
+    "tenacity==8.2.3",
+    "numpy==1.26.2",
+    "scikit-learn==1.3.2",
+    "hdbscan==0.8.40",
+    "networkx==3.2",
+    "scipy==1.11.4",
+    "cryptography==41.0.7",
+]
+
+[project.optional-dependencies]
+# The full self-hosted server: Postgres, the Celery broker, the ASGI
+# server, and migrations. Not needed for embedded/local use.
+server = [
+    "uvicorn==0.24.0",
+    "websockets==12.0",
+    "psycopg2-binary==2.9.9",
+    "asyncpg==0.29.0",
+    "alembic==1.12.1",
+    "redis==5.0.1",
+    "celery==5.3.6",
+    "prometheus-client==0.19.0",
+]
+dev = ["pytest==7.4.3", "pytest-asyncio==0.21.1"]
 
 [build-system]
 requires = ["setuptools>=45", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["neurowave_engine*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

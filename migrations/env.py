@@ -5,8 +5,8 @@ from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 
 from alembic import context
-from app.core.config import settings
-from app.db.models import Base
+from neurowave_engine.core.config import settings
+from neurowave_engine.db.models import Base
 
 # this is the Alembic Config object
 config = context.config

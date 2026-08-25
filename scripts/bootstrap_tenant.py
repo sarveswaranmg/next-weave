@@ -15,9 +15,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from app.core.security import generate_api_key  # noqa: E402
-from app.db.database import get_db_session  # noqa: E402
-from app.db.models import ApiKey, Role, Tenant  # noqa: E402
+from neurowave_engine.core.security import generate_api_key  # noqa: E402
+from neurowave_engine.db.database import get_db_session  # noqa: E402
+from neurowave_engine.db.models import ApiKey, Role, Tenant  # noqa: E402
 
 
 def main() -> None:

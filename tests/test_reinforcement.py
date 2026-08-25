@@ -2,7 +2,7 @@
 import pytest
 from unittest.mock import MagicMock, patch
 from datetime import datetime
-from app.services.reinforcement import MemoryReinforcementEngine
+from neurowave_engine.services.reinforcement import MemoryReinforcementEngine
 
 
 class TestMemoryReinforcementEngine:
@@ -147,7 +147,7 @@ class TestMemoryStateTransitions:
         mock_memory.reinforcement_count = 2
         mock_memory.retrieval_count = 0
         mock_memory.decay_rate = 0.05
-        from app.db.models import CognitiveMemoryStateEnum
+        from neurowave_engine.db.models import CognitiveMemoryStateEnum
         mock_memory.cognitive_state = CognitiveMemoryStateEnum.DORMANT
         
         mock_session.query.return_value.filter.return_value.first.return_value = mock_memory

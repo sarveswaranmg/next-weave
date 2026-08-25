@@ -3,13 +3,13 @@ import pytest
 from datetime import datetime, timedelta
 from uuid import uuid4
 
-from app.db.models import Memory, MemoryTypeEnum
-from app.services.contradiction_resolver import ContradictionResolver
-from app.services.knowledge_gap_detector import KnowledgeGapDetector
-from app.services.context_compression import ContextCompressionEngine, CompressedMemory
-from app.services.state_generator import StateGenerator
-from app.services.narrative_generator import NarrativeGenerator
-from app.services.context_evaluator import ContextEvaluator
+from neurowave_engine.db.models import Memory, MemoryTypeEnum
+from neurowave_engine.services.contradiction_resolver import ContradictionResolver
+from neurowave_engine.services.knowledge_gap_detector import KnowledgeGapDetector
+from neurowave_engine.services.context_compression import ContextCompressionEngine, CompressedMemory
+from neurowave_engine.services.state_generator import StateGenerator
+from neurowave_engine.services.narrative_generator import NarrativeGenerator
+from neurowave_engine.services.context_evaluator import ContextEvaluator
 
 
 def make_memory(

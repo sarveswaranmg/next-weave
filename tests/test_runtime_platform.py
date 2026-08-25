@@ -5,16 +5,16 @@ from uuid import uuid4
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from app.db.database import Base
-from app.db.models import User, Memory, MemoryTypeEnum, IdentityNode, DreamSession, ArchitecturalDecision
-from app.services.llm_providers import get_provider, EchoProvider, LLMProvider
-from app.services.runtime_orchestrator import RuntimeOrchestrator
-from app.services.explainability_engine import ExplainabilityEngine
-from app.services.plugin_system import PluginRegistry, CognitivePlugin, CuriosityPlugin, default_registry
-from app.services.dataset_generator import DatasetGenerator
-from app.services.benchmark_suite import NeuroBench, STRATEGY_REGISTRY
-from app.services.runtime_metrics_service import RuntimeMetricsService
-from app.services.data_deletion_service import DataDeletionService
+from neurowave_engine.db.database import Base
+from neurowave_engine.db.models import User, Memory, MemoryTypeEnum, IdentityNode, DreamSession, ArchitecturalDecision
+from neurowave_engine.services.llm_providers import get_provider, EchoProvider, LLMProvider
+from neurowave_engine.services.runtime_orchestrator import RuntimeOrchestrator
+from neurowave_engine.services.explainability_engine import ExplainabilityEngine
+from neurowave_engine.services.plugin_system import PluginRegistry, CognitivePlugin, CuriosityPlugin, default_registry
+from neurowave_engine.services.dataset_generator import DatasetGenerator
+from neurowave_engine.services.benchmark_suite import NeuroBench, STRATEGY_REGISTRY
+from neurowave_engine.services.runtime_metrics_service import RuntimeMetricsService
+from neurowave_engine.services.data_deletion_service import DataDeletionService
 
 
 class TestLLMProviders:
@@ -34,7 +34,7 @@ class TestLLMProviders:
         # Isolate from the test environment's global OPENAI_API_KEY (set
         # for unrelated reasons since Day 5) to actually exercise "no key
         # configured anywhere" rather than "key came from settings".
-        monkeypatch.setattr("app.services.llm_providers.settings.openai_api_key", "")
+        monkeypatch.setattr("neurowave_engine.services.llm_providers.settings.openai_api_key", "")
         provider = get_provider("openai", api_key=None)
         assert isinstance(provider, EchoProvider)
 
@@ -73,7 +73,7 @@ class TestRuntimeOrchestrator:
         assert session.query(User).filter(User.id == new_user_id).first() is not None
 
     def test_chat_rejects_user_id_owned_by_another_tenant(self, session, user, tenant):
-        from app.db.models import Tenant
+        from neurowave_engine.db.models import Tenant
         from fastapi import HTTPException
         other_tenant = Tenant(name="Other Tenant", email="other@example.com")
         session.add(other_tenant)
@@ -237,12 +237,12 @@ class TestRuntimeMetricsService:
         assert metrics["memory_count"] == 1
 
     def test_compute_persists_a_row_by_default(self, session, user):
-        from app.db.models import RuntimeMetrics
+        from neurowave_engine.db.models import RuntimeMetrics
         RuntimeMetricsService(session).compute(user_id=user.id)
         assert session.query(RuntimeMetrics).filter(RuntimeMetrics.user_id == user.id).count() == 1
 
     def test_compute_can_skip_persistence(self, session, user):
-        from app.db.models import RuntimeMetrics
+        from neurowave_engine.db.models import RuntimeMetrics
         RuntimeMetricsService(session).compute(user_id=user.id, persist=False)
         assert session.query(RuntimeMetrics).filter(RuntimeMetrics.user_id == user.id).count() == 0
 

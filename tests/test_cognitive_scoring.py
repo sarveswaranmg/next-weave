@@ -1,7 +1,7 @@
 """Tests for cognitive scoring engine"""
 import pytest
-from app.db.models import MemoryTypeEnum
-from app.services.cognitive_scoring import HybridScoringEngine, score_memory
+from neurowave_engine.db.models import MemoryTypeEnum
+from neurowave_engine.services.cognitive_scoring import HybridScoringEngine, score_memory
 
 
 class TestHybridScoringEngine:

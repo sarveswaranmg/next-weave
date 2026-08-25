@@ -63,7 +63,7 @@ kubectl apply -f k8s/ingress.yaml   # only if cert-manager is installed (see bel
    this is what caught two real, previously-undetected bugs: `migrations/alembic.ini` was missing
    its `[alembic]` section entirely (migrations had *never* actually run via the CLI in this
    project's history - CI only ever did `Base.metadata.create_all()` directly), and the Docker
-   image had no `PYTHONPATH`, so `alembic` couldn't import `app.core.config` from inside the
+   image had no `PYTHONPATH`, so `alembic` couldn't import `neurowave_engine.core.config` from inside the
    container. Both are fixed now (see `migrations/alembic.ini` and the `Dockerfile`).
 6. Applied `api-deployment.yaml` and `worker-deployment.yaml` (with the image tag substituted) and
    confirmed: pods reach `Running`/`Ready` (validates the readiness/liveness probe paths actually

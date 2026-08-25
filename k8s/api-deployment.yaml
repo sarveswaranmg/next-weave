@@ -24,7 +24,7 @@ spec:
           # or adopt Kustomize (`kustomize edit set image`) if you also want
           # per-environment overlays (staging/prod) - see k8s/README.md.
           image: neuroweave:IMAGE_TAG
-          command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+          command: ["uvicorn", "neurowave_engine.main:app", "--host", "0.0.0.0", "--port", "8000"]
           ports:
             - containerPort: 8000
           envFrom:

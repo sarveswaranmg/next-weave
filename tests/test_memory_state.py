@@ -2,8 +2,8 @@
 import pytest
 from unittest.mock import MagicMock
 from datetime import datetime, timedelta
-from app.services.memory_state import MemoryStateMachine
-from app.db.models import CognitiveMemoryStateEnum
+from neurowave_engine.services.memory_state import MemoryStateMachine
+from neurowave_engine.db.models import CognitiveMemoryStateEnum
 
 
 class TestMemoryStateMachine:

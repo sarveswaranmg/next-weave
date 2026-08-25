@@ -22,7 +22,7 @@ spec:
         - name: celery-worker
           # See k8s/api-deployment.yaml for why this isn't `:latest`.
           image: neuroweave:IMAGE_TAG
-          command: ["celery", "-A", "app.workers.celery_app", "worker", "--loglevel=info", "--concurrency=4"]
+          command: ["celery", "-A", "neurowave_engine.workers.celery_app", "worker", "--loglevel=info", "--concurrency=4"]
           envFrom:
             - configMapRef:
                 name: neuroweave-config
@@ -59,7 +59,7 @@ spec:
         - name: celery-beat
           # See k8s/api-deployment.yaml for why this isn't `:latest`.
           image: neuroweave:IMAGE_TAG
-          command: ["celery", "-A", "app.workers.celery_app", "beat", "--loglevel=info"]
+          command: ["celery", "-A", "neurowave_engine.workers.celery_app", "beat", "--loglevel=info"]
           envFrom:
             - configMapRef:
                 name: neuroweave-config

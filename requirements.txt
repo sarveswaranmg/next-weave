@@ -1,5 +1,9 @@
 fastapi==0.104.1
 uvicorn==0.24.0
+# uvicorn needs an explicit WebSocket implementation to actually serve WS
+# upgrades (it silently 404s every WS connection without one) - required
+# for POST-adjacent /runtime/chat/stream, not just a nice-to-have.
+websockets==12.0
 sqlalchemy==2.0.23
 psycopg2-binary==2.9.9
 asyncpg==0.29.0

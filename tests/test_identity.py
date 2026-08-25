@@ -13,13 +13,13 @@ from unittest.mock import Mock, patch
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from app.db.models import Base, IdentityNode, IdentityRelationship, IdentityHistory, Memory, ConceptMemory, User
-from app.db.models import MemoryTypeEnum, CognitiveMemoryStateEnum
-from app.services.identity_extractor import IdentityExtractor
-from app.services.identity_reinforcement import IdentityReinforcementService
-from app.services.identity_graph import IdentityGraphService
-from app.services.identity_profile_generator import IdentityProfileGenerator
-from app.services.identity_context_builder import IdentityAwareContextBuilder
+from neurowave_engine.db.models import Base, IdentityNode, IdentityRelationship, IdentityHistory, Memory, ConceptMemory, User
+from neurowave_engine.db.models import MemoryTypeEnum, CognitiveMemoryStateEnum
+from neurowave_engine.services.identity_extractor import IdentityExtractor
+from neurowave_engine.services.identity_reinforcement import IdentityReinforcementService
+from neurowave_engine.services.identity_graph import IdentityGraphService
+from neurowave_engine.services.identity_profile_generator import IdentityProfileGenerator
+from neurowave_engine.services.identity_context_builder import IdentityAwareContextBuilder
 
 
 @pytest.fixture(scope="function")

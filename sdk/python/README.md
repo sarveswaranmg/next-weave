@@ -1,9 +1,38 @@
 # NeuroWeave Python SDK
 
 Integrate the NeuroWeave Cognitive Runtime Platform into any AI agent in
-under five minutes.
+under five minutes — either embedded (no server) or against a running
+NeuroWeave deployment.
 
-## Install
+## Local / embedded mode (no server)
+
+The mem0-style zero-server path: runs in-process against a local SQLite
+file, no Docker/Postgres/Redis/Celery required.
+
+```bash
+# From a NeuroWeave checkout:
+pip install -e .                          # the engine (repo root)
+pip install -e "sdk/python[embedded]"
+```
+
+```python
+from neurowave import Memory
+
+m = Memory()  # ./neurowave.db on first use
+m.chat(user_id="alice", message="I'm building a Rust backend for a startup called Nexus.")
+result = m.chat(user_id="alice", message="What language am I using again?")
+print(result["response"])
+
+m.add(user_id="alice", content="Alice prefers concise answers.")
+m.search(query="Rust backend", user_id="alice")
+m.forget_user(user_id="alice")  # GDPR/CCPA erasure
+```
+
+`user_id` accepts any string — it's mapped to a stable UUID internally.
+Requires `OPENAI_API_KEY` (embeddings) and, for the default `google`
+provider, `GOOGLE_API_KEY`.
+
+## Against a running server
 
 ```bash
 # From a NeuroWeave checkout:
@@ -19,7 +48,7 @@ pip install -e "sdk/python[langchain]"
 from neurowave import CognitiveAgent
 
 agent = CognitiveAgent(
-    provider="openai",
+    provider="google",
     memory=True,
     world_model=True,
     predictive_recall=True,

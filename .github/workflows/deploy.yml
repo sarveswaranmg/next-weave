@@ -1,0 +1,48 @@
+name: Deploy
+
+# Runs only after the CI workflow finishes successfully on main - never
+# deploys code that hasn't passed tests. Also available as a manual
+# button (workflow_dispatch) for re-deploying a known-good ref without
+# waiting for a new push (e.g. after fixing something directly on the
+# server, or to redeploy after an infra change).
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Git ref to deploy (branch, tag, or SHA)"
+        required: false
+        default: "main"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+    steps:
+      - name: Determine ref to deploy
+        id: ref
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "ref=${{ inputs.ref }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "ref=${{ github.event.workflow_run.head_sha }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Secrets (OPENAI_API_KEY, DATABASE_URL, etc.) live only in the
+      # server's own .env.prod (see docs/DEPLOYMENT.md) - this workflow
+      # never sees or transmits them. It only needs SSH access to trigger
+      # the deploy script that already lives on the server.
+      - name: SSH in and run the deploy script
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            cd ${{ secrets.DEPLOY_REPO_DIR }}
+            ./scripts/deploy.sh ${{ steps.ref.outputs.ref }}

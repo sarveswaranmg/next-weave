@@ -1,0 +1,20 @@
+{$DOMAIN} {
+	# Caddy handles ACME (Let's Encrypt) certificate provisioning and
+	# renewal automatically - no certbot, no manual cert management.
+	# Requires DOMAIN's DNS A record to already point at this server's
+	# public IP before Caddy starts, or the ACME HTTP-01 challenge fails.
+	reverse_proxy neuroweave:8000
+
+	encode gzip
+
+	# WebSocket support for /runtime/chat/stream - reverse_proxy handles
+	# the Upgrade/Connection headers automatically, this just keeps the
+	# connection open long enough for a real streaming chat session.
+	@websockets {
+		header Connection *Upgrade*
+		header Upgrade websocket
+	}
+	handle @websockets {
+		reverse_proxy neuroweave:8000
+	}
+}

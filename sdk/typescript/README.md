@@ -18,7 +18,7 @@ npm run build
 import { CognitiveAgent } from "neurowave";
 
 const agent = new CognitiveAgent({
-  provider: "openai",
+  provider: "google",
   memory: true,
   worldModel: true,
   predictiveRecall: true,

@@ -5,7 +5,7 @@
  * import { CognitiveAgent } from "neurowave";
  *
  * const agent = new CognitiveAgent({
- *   provider: "openai",
+ *   provider: "google",
  *   memory: true,
  *   worldModel: true,
  *   predictiveRecall: true,
@@ -31,7 +31,7 @@ export class CognitiveAgent {
     const { baseUrl, apiKey, ...defaults } = options;
     this.client = new NeuroWeaveClient({ baseUrl, apiKey });
     this.defaults = {
-      provider: "openai",
+      provider: "google",
       memory: true,
       worldModel: true,
       predictiveRecall: true,

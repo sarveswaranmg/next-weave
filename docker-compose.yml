@@ -7,7 +7,7 @@ services:
       POSTGRES_USER: neuroweave
       POSTGRES_PASSWORD: neuroweave
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -20,7 +20,7 @@ services:
     image: redis:7-alpine
     container_name: neuroweave-redis
     ports:
-      - "6379:6379"
+      - "${REDIS_PORT:-6379}:6379"
     volumes:
       - redis_data:/data
     healthcheck:
@@ -37,12 +37,13 @@ services:
       REDIS_URL: redis://redis:6379/0
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
       RUNTIME_API_KEY: ${RUNTIME_API_KEY:-}
       CREDENTIAL_ENCRYPTION_KEY: ${CREDENTIAL_ENCRYPTION_KEY:-}
       DEBUG: "false"
       ENVIRONMENT: development
     ports:
-      - "8000:8000"
+      - "${NEUROWEAVE_PORT:-8000}:8000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -50,7 +51,7 @@ services:
         condition: service_healthy
     volumes:
       - ./app:/app/app
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    command: uvicorn neurowave_engine.main:app --host 0.0.0.0 --port 8000 --reload
 
   celery-worker:
     build: .
@@ -60,6 +61,7 @@ services:
       REDIS_URL: redis://redis:6379/0
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
       DEBUG: "false"
       ENVIRONMENT: development
     depends_on:
@@ -69,7 +71,18 @@ services:
         condition: service_healthy
     volumes:
       - ./app:/app/app
-    command: celery -A app.workers.celery_app worker --loglevel=info --concurrency=4
+    command: celery -A neurowave_engine.workers.celery_app worker --loglevel=info --concurrency=4
+    # Override the image's baked-in HEALTHCHECK (Dockerfile's probes port
+    # 8000, which nothing in this container listens on - every image built
+    # from this Dockerfile inherits that HTTP check regardless of what
+    # command it actually runs, so celery containers show "unhealthy"
+    # forever unless overridden here).
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A neurowave_engine.workers.celery_app inspect ping -d celery@$$HOSTNAME || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
 
   celery-beat:
     build: .
@@ -79,6 +92,7 @@ services:
       REDIS_URL: redis://redis:6379/0
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
       DEBUG: "false"
       ENVIRONMENT: development
     depends_on:
@@ -91,7 +105,12 @@ services:
     # Exactly one beat replica - a second one would double-fire every
     # scheduled task (memory evolution ticks, dream-mode scheduling,
     # retention enforcement).
-    command: celery -A app.workers.celery_app beat --loglevel=info
+    command: celery -A neurowave_engine.workers.celery_app beat --loglevel=info
+    # Beat has no meaningful self-ping like the worker does (it only
+    # schedules, doesn't consume) - disable the image's inherited HTTP
+    # healthcheck rather than report a false "unhealthy" forever.
+    healthcheck:
+      disable: true
 
 volumes:
   postgres_data:

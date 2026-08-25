@@ -3,13 +3,13 @@ import pytest
 from datetime import datetime, timedelta
 from uuid import uuid4
 
-from app.db.models import Memory, MemoryTypeEnum
-from app.services.goal_detector import GoalDetector
-from app.services.intent_classifier import IntentClassifier
-from app.services.utility_predictor import MemoryUtilityPredictor, UtilityWeights
-from app.services.token_budget_optimizer import TokenBudgetOptimizer
-from app.services.memory_ranker import PredictiveMemoryRanker
-from app.services.context_assembler import ContextAssembler
+from neurowave_engine.db.models import Memory, MemoryTypeEnum
+from neurowave_engine.services.goal_detector import GoalDetector
+from neurowave_engine.services.intent_classifier import IntentClassifier
+from neurowave_engine.services.utility_predictor import MemoryUtilityPredictor, UtilityWeights
+from neurowave_engine.services.token_budget_optimizer import TokenBudgetOptimizer
+from neurowave_engine.services.memory_ranker import PredictiveMemoryRanker
+from neurowave_engine.services.context_assembler import ContextAssembler
 
 
 def make_memory(

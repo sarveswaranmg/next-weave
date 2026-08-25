@@ -425,10 +425,10 @@ liveness). `./docker-start.sh` and `./quickstart.sh` automate the same steps.
 ```bash
 pip install -r requirements.txt
 alembic upgrade head
-uvicorn app.main:app --reload
+uvicorn neurowave_engine.main:app --reload
 # in separate terminals:
-celery -A app.workers.celery_app worker --loglevel=info
-celery -A app.workers.celery_app beat --loglevel=info
+celery -A neurowave_engine.workers.celery_app worker --loglevel=info
+celery -A neurowave_engine.workers.celery_app beat --loglevel=info
 ```
 
 A `Makefile` wraps the common commands (`make install`, `make dev`, `make test`, `make

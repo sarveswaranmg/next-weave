@@ -12,7 +12,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from app.db.models import Base, Tenant, User
+from neurowave_engine.db.models import Base, Tenant, User
 
 
 @pytest.fixture

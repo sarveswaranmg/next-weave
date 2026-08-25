@@ -6,23 +6,23 @@ from uuid import uuid4
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from app.db.database import Base
-from app.db.models import (
+from neurowave_engine.db.database import Base
+from neurowave_engine.db.models import (
     User, Memory, MemoryTypeEnum, CognitiveMemoryStateEnum,
     ConceptMemory, ConceptRelationship, IdentityNode, IdentityRelationship,
     MemoryEvent, MemoryEmbedding, DreamSession, DreamSessionStatusEnum,
     KnowledgeSynthesis, IdentityEvolutionEvent, PredictiveRecallLog, ContextSnapshot,
 )
-from app.services.replay_engine import ReplayEngine
-from app.services.pattern_discovery import PatternDiscoveryEngine
-from app.services.concept_refiner import ConceptRefiner
-from app.services.identity_evolution import IdentityEvolutionEngine
-from app.services.consistency_engine import ConsistencyEngine
-from app.services.graph_optimizer import GraphOptimizationEngine
-from app.services.knowledge_synthesizer import KnowledgeSynthesizer
-from app.services.compression_optimizer import CompressionOptimizer
-from app.services.dream_scheduler import DreamScheduler
-from app.services.dream_pipeline import DreamPipeline
+from neurowave_engine.services.replay_engine import ReplayEngine
+from neurowave_engine.services.pattern_discovery import PatternDiscoveryEngine
+from neurowave_engine.services.concept_refiner import ConceptRefiner
+from neurowave_engine.services.identity_evolution import IdentityEvolutionEngine
+from neurowave_engine.services.consistency_engine import ConsistencyEngine
+from neurowave_engine.services.graph_optimizer import GraphOptimizationEngine
+from neurowave_engine.services.knowledge_synthesizer import KnowledgeSynthesizer
+from neurowave_engine.services.compression_optimizer import CompressionOptimizer
+from neurowave_engine.services.dream_scheduler import DreamScheduler
+from neurowave_engine.services.dream_pipeline import DreamPipeline
 
 
 def make_memory(session, user_id, content="Some memory content", memory_type=MemoryTypeEnum.SEMANTIC,

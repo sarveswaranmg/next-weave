@@ -12,11 +12,11 @@ stops mattering, and assembles a token-budgeted context on demand — all behind
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/)
 
 ```python
-from neurowave import CognitiveAgent
+from neurowave import Memory
 
-agent = CognitiveAgent(provider="openai")
-response = agent.chat(user_id="user-123", message="I'm building a Rust backend for a startup called Nexus.")
-response = agent.chat(user_id="user-123", message="What language am I using again?")
+m = Memory()  # local SQLite file, no server/Docker/Postgres/Redis required
+m.chat(user_id="alice", message="I'm building a Rust backend for a startup called Nexus.")
+m.chat(user_id="alice", message="What language am I using again?")
 # -> remembers, without you re-sending any history
 ```
 
@@ -50,7 +50,44 @@ the full rationale.
 - **Production scaffolding** — Prometheus metrics, GDPR-compliant hard-deletion, API-key auth,
   Docker Compose, Kubernetes manifests, CI with a continuous-evaluation benchmark job.
 
-## Quick Start
+## Quick Start (embedded — no server)
+
+The fastest way to try NeuroWeave: it runs in-process against a local SQLite file, like mem0's
+default mode — no Docker, Postgres, Redis, or Celery.
+
+```bash
+pip install -e .                          # from a NeuroWeave checkout - the engine (lean core)
+pip install -e "sdk/python[embedded]"      # the SDK's embedded Memory() entry point
+export OPENAI_API_KEY=sk-...               # embeddings (search) - always required
+export GOOGLE_API_KEY=...                  # free-tier Gemini, the default chat provider
+```
+
+```python
+from neurowave import Memory
+
+m = Memory()  # creates ./neurowave.db on first use
+m.chat(user_id="alice", message="I'm building a Rust backend for a startup called Nexus.")
+result = m.chat(user_id="alice", message="What language am I using again?")
+print(result["response"])
+
+m.add(user_id="alice", content="Alice prefers concise answers.")   # store without an LLM call
+m.search(query="Rust backend", user_id="alice")                    # ranked recall
+m.forget_user(user_id="alice")                                     # GDPR/CCPA erasure
+```
+
+`user_id` can be any string (`"alice"`, an internal user PK, etc.) — it's mapped to a stable
+UUID internally, so you don't need to generate one yourself. This runs the exact same
+`RuntimeOrchestrator` cognitive pipeline as the hosted server, just in-process and single-tenant.
+For a real multi-tenant, horizontally-scaled deployment, see **Self-Hosted / Production** below.
+
+**Known limitation:** embeddings (used by `search()`/`chat()`'s recall step) always go through
+OpenAI today — there's no offline/local embedding model yet. This matches mem0's own default
+behavior; a local embedding option is a natural follow-up.
+
+## Self-Hosted / Production
+
+For a real multi-tenant deployment (horizontal scaling, a shared Postgres+pgvector store,
+background consolidation via Celery):
 
 **Prerequisites:** Docker + Docker Compose (or Python 3.11+ with a local Postgres+pgvector and
 Redis).
@@ -58,7 +95,7 @@ Redis).
 ```bash
 git clone <this-repo-url>
 cd NextWeave
-cp .env.example .env            # set OPENAI_API_KEY at minimum
+cp .env.example .env            # set OPENAI_API_KEY (embeddings) and GOOGLE_API_KEY (free chat provider) at minimum
 docker compose up -d            # postgres, redis, api, celery-worker, celery-beat
 docker compose exec neuroweave alembic -c migrations/alembic.ini upgrade head
 ```
@@ -83,12 +120,12 @@ curl -X POST localhost:8000/runtime/chat \
 
 Without Docker:
 ```bash
-pip install -r requirements.txt
+pip install -e ".[server]"
 alembic -c migrations/alembic.ini upgrade head
-uvicorn app.main:app --reload
+uvicorn neurowave_engine.main:app --reload
 ```
 
-## Using the SDK
+### Using the REST client SDK
 
 ```bash
 pip install -e sdk/python[dev]
@@ -96,7 +133,7 @@ pip install -e sdk/python[dev]
 ```python
 from neurowave import CognitiveAgent
 
-agent = CognitiveAgent(provider="openai", base_url="http://localhost:8000")
+agent = CognitiveAgent(provider="google", base_url="http://localhost:8000")
 result = agent.chat(user_id="...", message="...")
 agent.explain(user_id="...", subject_type="decision")   # why did it respond this way?
 agent.forget_user(user_id="...")                          # GDPR erasure
@@ -108,9 +145,15 @@ cd sdk/typescript && npm install && npm run build
 ```
 ```ts
 import { CognitiveAgent } from "neurowave";
-const agent = new CognitiveAgent({ provider: "openai", baseUrl: "http://localhost:8000" });
+const agent = new CognitiveAgent({ provider: "google", baseUrl: "http://localhost:8000" });
 await agent.chat(userId, "...");
 ```
+
+## Deploying to Production
+
+**[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)** — step-by-step guide for a single-server Docker
+Compose deploy with automatic HTTPS (Caddy) and an optional GitHub Actions CI/CD trigger. For a
+Kubernetes cluster instead, see **[k8s/README.md](k8s/README.md)**.
 
 ## Documentation
 

@@ -6,21 +6,21 @@ from uuid import uuid4
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from app.db.database import Base
-from app.db.models import (
+from neurowave_engine.db.database import Base
+from neurowave_engine.db.models import (
     User, Memory, MemoryTypeEnum, CognitiveMemoryStateEnum,
     ConceptMemory, ConceptRelationship, IdentityNode, IdentityRelationship,
     MemoryEvent,
 )
-from app.services.memory_decay_engine import AdaptiveDecayStrategy, MemoryDecayEngine
-from app.services.duplicate_resolver import DuplicateResolver
-from app.services.obsolete_memory_detector import ObsoleteMemoryDetector
-from app.services.memory_entropy import MemoryEntropyCalculator
-from app.services.reinforcement_recovery import ReinforcementRecoveryService
-from app.services.memory_lifecycle_manager import MemoryLifecycleManager
-from app.services.forgetting_engine import ForgettingEngine
-from app.services.memory_health_monitor import MemoryHealthService
-from app.services.memory_evolution_pipeline import MemoryEvolutionPipeline
+from neurowave_engine.services.memory_decay_engine import AdaptiveDecayStrategy, MemoryDecayEngine
+from neurowave_engine.services.duplicate_resolver import DuplicateResolver
+from neurowave_engine.services.obsolete_memory_detector import ObsoleteMemoryDetector
+from neurowave_engine.services.memory_entropy import MemoryEntropyCalculator
+from neurowave_engine.services.reinforcement_recovery import ReinforcementRecoveryService
+from neurowave_engine.services.memory_lifecycle_manager import MemoryLifecycleManager
+from neurowave_engine.services.forgetting_engine import ForgettingEngine
+from neurowave_engine.services.memory_health_monitor import MemoryHealthService
+from neurowave_engine.services.memory_evolution_pipeline import MemoryEvolutionPipeline
 
 
 

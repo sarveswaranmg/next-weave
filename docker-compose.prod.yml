@@ -1,0 +1,141 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg15
+    container_name: neuroweave-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: neuroweave
+      POSTGRES_USER: neuroweave
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    # No host port mapping - only reachable from other containers on the
+    # neuroweave-network, never from the internet. SSH-tunnel in for
+    # ad-hoc psql access instead of exposing 5432 publicly.
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U neuroweave"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: neuroweave-redis
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  neuroweave:
+    build: .
+    image: neuroweave:${IMAGE_TAG:-latest}
+    container_name: neuroweave-api
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://neuroweave:${POSTGRES_PASSWORD}@postgres:5432/neuroweave
+      REDIS_URL: redis://redis:6379/0
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
+      RUNTIME_API_KEY: ${RUNTIME_API_KEY:-}
+      CREDENTIAL_ENCRYPTION_KEY: ${CREDENTIAL_ENCRYPTION_KEY}
+      DEBUG: "false"
+      ENVIRONMENT: production
+    # No host port mapping and no bind-mounted source - Caddy is the only
+    # public entry point (below), and the container runs the image's
+    # baked-in code, not a live host mount (that's a dev-only convenience
+    # in docker-compose.yml). No --reload either - that's dev-only too.
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: uvicorn neurowave_engine.main:app --host 0.0.0.0 --port 8000
+
+  celery-worker:
+    build: .
+    image: neuroweave:${IMAGE_TAG:-latest}
+    container_name: neuroweave-celery-worker
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://neuroweave:${POSTGRES_PASSWORD}@postgres:5432/neuroweave
+      REDIS_URL: redis://redis:6379/0
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
+      CREDENTIAL_ENCRYPTION_KEY: ${CREDENTIAL_ENCRYPTION_KEY}
+      DEBUG: "false"
+      ENVIRONMENT: production
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: celery -A neurowave_engine.workers.celery_app worker --loglevel=info --concurrency=4
+    # Override the image's baked-in HEALTHCHECK (Dockerfile's probes port
+    # 8000, which nothing in this container listens on).
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A neurowave_engine.workers.celery_app inspect ping -d celery@$$HOSTNAME || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  celery-beat:
+    build: .
+    image: neuroweave:${IMAGE_TAG:-latest}
+    container_name: neuroweave-celery-beat
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://neuroweave:${POSTGRES_PASSWORD}@postgres:5432/neuroweave
+      REDIS_URL: redis://redis:6379/0
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
+      CREDENTIAL_ENCRYPTION_KEY: ${CREDENTIAL_ENCRYPTION_KEY}
+      DEBUG: "false"
+      ENVIRONMENT: production
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    # Exactly one beat replica - never scale this service. A second one
+    # would double-fire every scheduled task (memory evolution ticks,
+    # dream-mode scheduling, retention enforcement).
+    command: celery -A neurowave_engine.workers.celery_app beat --loglevel=info
+    # Beat has no meaningful self-ping like the worker does - disable the
+    # image's inherited HTTP healthcheck rather than report a false
+    # "unhealthy" forever.
+    healthcheck:
+      disable: true
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: neuroweave-caddy
+    restart: unless-stopped
+    environment:
+      DOMAIN: ${DOMAIN}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - neuroweave
+
+volumes:
+  postgres_data:
+  redis_data:
+  caddy_data:
+  caddy_config:
+
+networks:
+  default:
+    name: neuroweave-network

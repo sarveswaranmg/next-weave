@@ -4,7 +4,7 @@ CognitiveAgent — the five-minute integration surface.
     from neurowave import CognitiveAgent
 
     agent = CognitiveAgent(
-        provider="openai",
+        provider="google",
         memory=True,
         world_model=True,
         predictive_recall=True,
@@ -26,7 +26,7 @@ class CognitiveAgent:
 
     def __init__(
         self,
-        provider: str = "openai",
+        provider: str = "google",
         model: Optional[str] = None,
         memory: bool = True,
         world_model: bool = True,

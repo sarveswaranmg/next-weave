@@ -1,9 +1,10 @@
-.PHONY: help install dev test test-sdk lint format clean docker-build docker-up docker-down migrate docs
+.PHONY: help install install-embedded dev test test-sdk lint format clean docker-build docker-up docker-down migrate docs
 
 help:
 	@echo "NeuroWeave Development Commands"
 	@echo "==============================="
 	@echo "make install    - Install dependencies"
+	@echo "make install-embedded - Install the embedded/local Memory() SDK (no server needed)"
 	@echo "make dev        - Run development server"
 	@echo "make test       - Run backend test suite"
 	@echo "make test-sdk   - Run Python SDK test suite"
@@ -19,24 +20,28 @@ help:
 install:
 	pip install -r requirements.txt
 
+install-embedded:
+	pip install -e .
+	pip install -e "sdk/python[embedded]"
+
 dev:
 	export PYTHONUNBUFFERED=1 && \
-	uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+	uvicorn neurowave_engine.main:app --reload --host 0.0.0.0 --port 8000
 
 test:
-	pytest -v --cov=app --cov-report=html
+	pytest -v --cov=neurowave_engine --cov-report=html
 
 test-sdk:
 	pip install -e sdk/python[dev]
 	pytest sdk/python/tests/ -v
 
 lint:
-	flake8 app
-	mypy app
+	flake8 neurowave_engine
+	mypy neurowave_engine
 
 format:
-	black app
-	isort app
+	black neurowave_engine
+	isort neurowave_engine
 
 clean:
 	find . -type d -name __pycache__ -exec rm -rf {} +

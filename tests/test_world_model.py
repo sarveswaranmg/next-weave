@@ -5,22 +5,22 @@ from uuid import uuid4
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from app.db.database import Base
-from app.db.models import (
+from neurowave_engine.db.database import Base
+from neurowave_engine.db.models import (
     User, WorldEntity, WorldEntityTypeEnum, WorldRelationship,
     Project, ProjectStatusEnum, ArchitecturalDecision,
 )
-from app.services.entity_extractor import EntityExtractor
-from app.services.relationship_builder import RelationshipBuilder
-from app.services.world_graph import WorldGraph
-from app.services.project_engine import ProjectMemoryEngine
-from app.services.decision_engine import DecisionMemoryEngine
-from app.services.active_context_engine import ActiveContextEngine
-from app.services.timeline_engine import TimelineEngine
-from app.services.environmental_context_engine import EnvironmentalContextEngine
-from app.services.predictive_project_intelligence import PredictiveProjectIntelligence
-from app.services.world_traversal import WorldTraversalService
-from app.services.world_model_pipeline import WorldModelPipeline
+from neurowave_engine.services.entity_extractor import EntityExtractor
+from neurowave_engine.services.relationship_builder import RelationshipBuilder
+from neurowave_engine.services.world_graph import WorldGraph
+from neurowave_engine.services.project_engine import ProjectMemoryEngine
+from neurowave_engine.services.decision_engine import DecisionMemoryEngine
+from neurowave_engine.services.active_context_engine import ActiveContextEngine
+from neurowave_engine.services.timeline_engine import TimelineEngine
+from neurowave_engine.services.environmental_context_engine import EnvironmentalContextEngine
+from neurowave_engine.services.predictive_project_intelligence import PredictiveProjectIntelligence
+from neurowave_engine.services.world_traversal import WorldTraversalService
+from neurowave_engine.services.world_model_pipeline import WorldModelPipeline
 
 
 

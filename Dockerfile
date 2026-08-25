@@ -1,11 +1,12 @@
 FROM python:3.11-slim
 
 WORKDIR /app
-# alembic's env.py imports `app.core.config`, but alembic (a console-script
-# entry point, not `python script.py`) doesn't add the cwd to sys.path on
-# its own - without this, `alembic -c migrations/alembic.ini upgrade head`
-# fails with "ModuleNotFoundError: No module named 'app'" for every
-# in-container invocation (docker compose exec, a migration Job, etc.).
+# alembic's env.py imports `neurowave_engine.core.config`, but alembic (a
+# console-script entry point, not `python script.py`) doesn't add the cwd to
+# sys.path on its own - without this, `alembic -c migrations/alembic.ini
+# upgrade head` fails with "ModuleNotFoundError: No module named
+# 'neurowave_engine'" for every in-container invocation (docker compose
+# exec, a migration Job, etc.).
 ENV PYTHONPATH=/app
 
 # Install system dependencies
@@ -32,4 +33,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD python -c "import httpx; httpx.get('http://localhost:8000/health', timeout=5)"
 
 # Run application
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "neurowave_engine.main:app", "--host", "0.0.0.0", "--port", "8000"]

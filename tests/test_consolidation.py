@@ -7,15 +7,15 @@ from datetime import datetime
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
-from app.db.models import (
+from neurowave_engine.db.models import (
     Base, Memory, MemoryCluster, ConceptMemory, ConceptRelationship,
     User, MemoryTypeEnum, CognitiveMemoryStateEnum
 )
-from app.services.semantic_clustering import SemanticClusterService
-from app.services.memory_merge import MemoryMergeService
-from app.services.concept_generator import ConceptGenerator
-from app.services.concept_graph import ConceptGraph
-from app.services.consolidation_worker import ConsolidationWorker
+from neurowave_engine.services.semantic_clustering import SemanticClusterService
+from neurowave_engine.services.memory_merge import MemoryMergeService
+from neurowave_engine.services.concept_generator import ConceptGenerator
+from neurowave_engine.services.concept_graph import ConceptGraph
+from neurowave_engine.services.consolidation_worker import ConsolidationWorker
 
 
 @pytest.fixture
