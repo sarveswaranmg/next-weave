@@ -108,6 +108,24 @@ This prints a `tenant_id` and a plaintext API key - **copy the key now, it is ne
 additional keys later (e.g. one per environment/integration) via `POST /runtime/keys` once you
 have at least one working key - see the main README's "Multi-Tenancy & Auth" section.
 
+This is the manual, admin-run path for tenants you create yourself. If you want other people to
+sign up for their own tenant without you running anything, see **Letting others self-serve
+sign up** below instead.
+
+### Letting others self-serve sign up
+
+`https://$DOMAIN/signup` is a public web page (no API key needed) where anyone can create their
+own tenant: they submit an email, click the verification link they're sent, and land on a page
+showing their API key once. Each self-serve tenant is capped at
+`FREE_TIER_MONTHLY_CHAT_LIMIT` (default 200) `/runtime/chat` calls per calendar month - there's
+no billing integration yet, so this is a hard ceiling, not a paid plan. To actually use this in
+production you need real SMTP credentials set in `.env.prod` (`SMTP_HOST`/`SMTP_PORT`/
+`SMTP_USERNAME`/`SMTP_PASSWORD`/`SMTP_FROM_EMAIL`) - without them, verification links are only
+logged inside the container, which real signups can't see. `SIGNUP_MAX_PER_IP_PER_DAY` (default
+5) rate-limits repeat signups from one address; this only works correctly because
+`docker-compose.prod.yml`'s uvicorn command runs with `--proxy-headers`, trusting Caddy's
+`X-Forwarded-For` for the real caller IP.
+
 ## 8. Verify end-to-end
 
 ```bash

@@ -63,7 +63,7 @@ read/analysis/lifecycle services — none of them are in the hot chat path.
 | `ExplainabilityEngine` | `app/services/explainability_engine.py` | Answers "why" for a memory, retrieval, identity shift, dream session, or decision |
 | `PluginRegistry` / `CognitivePlugin` | `app/services/plugin_system.py` | ABC + registry for `on_message`/`on_memory_created`/`on_response` hooks; per-plugin exception isolation |
 | `DatasetGenerator` | `app/services/dataset_generator.py` | Deterministic (seeded) synthetic users/conversations with contradictions and identity shifts, for benchmarking |
-| `NeuroBench` | `app/services/benchmark_suite.py` | `BenchmarkStrategy` comparison (no-memory / raw-history / NeuroWeave; Mem0/Zep explicitly stubbed as `MissingStrategy`, not faked) |
+| `NeuroBench` | `app/services/benchmark_suite.py` | `BenchmarkStrategy` comparison (no-memory / raw-history / NeuroWeave; other memory systems explicitly stubbed as `MissingStrategy`, not faked) |
 | Prometheus metrics | `app/utils/prometheus_metrics.py` | Real counters/histograms for chat requests, latency, memory ingestion, benchmark runs, dream sessions |
 | `RuntimeMetricsService` | `app/services/runtime_metrics_service.py` | Rolls up memory/concept/identity/world counts + compression ratio + cognitive health into a persisted snapshot |
 | `security.py` | `app/core/security.py` | `Role`/`ROLE_PERMISSIONS` RBAC scaffold + `verify_api_key` dependency (no-op if unconfigured) |
@@ -124,7 +124,7 @@ is unauthenticated (standard Prometheus scrape convention).
 - **Dataset generator (3 tests):** same seed → identical output; generated users include both
   contradictions and identity shifts; long-conversation generator produces the requested length.
 - **NeuroBench (3 tests):** strategies are genuinely compared against each other; a missing strategy
-  (`mem0`/`zep`) is skipped and logged, never faked with synthetic numbers; `run_dataset` generates
+  (an unimplemented external memory system) is skipped and logged, never faked with synthetic numbers; `run_dataset` generates
   real `User`/`Memory` rows and benchmarks them.
 - **Runtime metrics (3 tests):** counts memories correctly; persists a row by default; can skip
   persistence.
@@ -194,7 +194,7 @@ attributable elsewhere:
 - **`clear()` on the LangChain memory adapter is an intentional no-op.** NeuroWeave memories are
   durable by design (soft-delete/never-hard-delete, established Day 2); the adapter's docstring directs
   callers to `client.delete_user()` for actual erasure rather than silently discarding history.
-- **NeuroBench's `mem0`/`zep` strategies are explicitly unimplemented, not faked.** `MissingStrategy`
+- **NeuroBench's external-memory-system strategies are explicitly unimplemented, not faked.** `MissingStrategy`
   raises `NotImplementedError`, which `NeuroBench.run()` catches and skips with a log line — there was
   no attempt to synthesize plausible-looking comparison numbers for competitor products without
   actually running them.
@@ -248,8 +248,8 @@ attributable elsewhere:
   Kernel adapters can all follow `sdk/python/neurowave/integrations/langchain.py`'s shape — wrap
   `NeuroWeaveClient`, translate that framework's memory/tool-call interface into
   `compose_context`/`ingest_memory`/`chat` calls.
-- **Real Mem0/Zep benchmark strategies:** once those SDKs are an approved dependency,
-  `BenchmarkStrategy` subclasses replacing the `MissingStrategy` stubs in `STRATEGY_REGISTRY` slot in
+- **Real benchmark strategies for other memory systems:** once an SDK is an approved dependency,
+  a `BenchmarkStrategy` subclass replacing the `MissingStrategy` stub in `STRATEGY_REGISTRY` slots in
   without touching `NeuroBench.run()`'s comparison logic.
 - **OpenTelemetry tracing:** the Prometheus metrics module already isolates a custom `registry`
   (`app/utils/prometheus_metrics.py`); a parallel `app/utils/tracing.py` wrapping

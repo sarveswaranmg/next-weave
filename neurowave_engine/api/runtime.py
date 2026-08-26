@@ -32,6 +32,7 @@ from neurowave_engine.services.data_deletion_service import DataDeletionService
 from neurowave_engine.services.tenancy import get_owned_user_or_404
 from neurowave_engine.services.credential_resolver import resolve_provider_kwargs
 from neurowave_engine.services.llm_providers import ProviderCredentialError
+from neurowave_engine.services.usage_limiter import check_and_increment, UsageLimitExceeded
 from neurowave_engine.utils.prometheus_metrics import record_chat, record_benchmark_run, render_metrics
 
 logger = logging.getLogger(__name__)
@@ -63,6 +64,12 @@ async def runtime_chat(
     start = time.time()
     provider_label = request.provider or settings.runtime_default_provider
     try:
+        # Checked (and reserved) *before* the LLM call, not after: this is a
+        # hard cost cap, so the call that would exceed it must never
+        # actually reach the provider - checking post-hoc would mean the
+        # first over-limit request still costs real money before being
+        # rejected.
+        check_and_increment(session, auth.tenant_id)
         provider_kwargs = resolve_provider_kwargs(session, auth.tenant_id, provider_label)
         orchestrator = RuntimeOrchestrator(session)
         result = orchestrator.chat(
@@ -74,6 +81,9 @@ async def runtime_chat(
         )
         record_chat(result["provider"], "success", (time.time() - start))
         return ChatResponse(**result)
+    except UsageLimitExceeded as e:
+        record_chat(provider_label, "error", (time.time() - start))
+        raise HTTPException(status_code=429, detail=str(e))
     except ProviderCredentialError as e:
         record_chat(provider_label, "error", (time.time() - start))
         raise HTTPException(status_code=422, detail=str(e))

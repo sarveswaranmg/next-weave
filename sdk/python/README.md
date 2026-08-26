@@ -6,8 +6,8 @@ NeuroWeave deployment.
 
 ## Local / embedded mode (no server)
 
-The mem0-style zero-server path: runs in-process against a local SQLite
-file, no Docker/Postgres/Redis/Celery required.
+The zero-server path: runs in-process against a local SQLite file, no
+Docker/Postgres/Redis/Celery required.
 
 ```bash
 # From a NeuroWeave checkout:

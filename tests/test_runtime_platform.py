@@ -216,7 +216,7 @@ class TestNeuroBench:
 
     def test_missing_strategy_is_skipped_not_faked(self, session, user):
         bench = NeuroBench(session)
-        runs = bench.run(user.id, "test query", strategies=["mem0"])
+        runs = bench.run(user.id, "test query", strategies=["external_a"])
         assert runs == []  # not implemented, not fabricated
 
     def test_run_dataset_generates_and_benchmarks(self, session):

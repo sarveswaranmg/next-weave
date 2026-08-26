@@ -52,8 +52,8 @@ the full rationale.
 
 ## Quick Start (embedded — no server)
 
-The fastest way to try NeuroWeave: it runs in-process against a local SQLite file, like mem0's
-default mode — no Docker, Postgres, Redis, or Celery.
+The fastest way to try NeuroWeave: it runs in-process against a local SQLite file — no Docker,
+Postgres, Redis, or Celery.
 
 ```bash
 pip install -e .                          # from a NeuroWeave checkout - the engine (lean core)
@@ -81,8 +81,8 @@ UUID internally, so you don't need to generate one yourself. This runs the exact
 For a real multi-tenant, horizontally-scaled deployment, see **Self-Hosted / Production** below.
 
 **Known limitation:** embeddings (used by `search()`/`chat()`'s recall step) always go through
-OpenAI today — there's no offline/local embedding model yet. This matches mem0's own default
-behavior; a local embedding option is a natural follow-up.
+OpenAI today — there's no offline/local embedding model yet. A local embedding option is a
+natural follow-up.
 
 ## Self-Hosted / Production
 
@@ -108,6 +108,13 @@ Bootstrap your first tenant + key:
 docker compose exec neuroweave python scripts/bootstrap_tenant.py --name "My Company" --email me@example.com
 # prints: Tenant (tenant_id): ...  API key (shown once, store it now): nw_live_...
 ```
+
+That's the admin-run path for tenants you create yourself. To let other people create their own
+tenant without you running anything, point them at `http://localhost:8000/signup` — a public
+signup page (email verification, one free-tier API key per account, capped at
+`FREE_TIER_MONTHLY_CHAT_LIMIT` calls/month, no billing yet). See
+[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md#letting-others-self-serve-sign-up) for the production
+setup (SMTP, rate limiting).
 
 The API is now live at `http://localhost:8000` — try `/docs` for interactive Swagger, or:
 

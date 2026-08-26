@@ -54,7 +54,13 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    command: uvicorn neurowave_engine.main:app --host 0.0.0.0 --port 8000
+    # --proxy-headers/--forwarded-allow-ips: Caddy is the only public entry
+    # point (there's no host port mapping above), so trusting its
+    # X-Forwarded-For is safe - without this, request.client.host in
+    # neurowave_engine/api/signup.py sees Caddy's IP for every request,
+    # making the signup endpoint's IP rate limiting meaningless (one real
+    # abuser and every legitimate signer-upper share the same "IP").
+    command: uvicorn neurowave_engine.main:app --host 0.0.0.0 --port 8000 --proxy-headers --forwarded-allow-ips='*'
 
   celery-worker:
     build: .

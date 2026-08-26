@@ -9,9 +9,9 @@ metrics that would normally require an LLM judge (reasoning quality,
 hallucination rate) are heuristic proxies here, not model-graded scores —
 see `DAY10_RUNTIME_PLATFORM.md` for exactly what's measured vs. proxied.
 
-Mem0 and Zep are modeled as pluggable `BenchmarkStrategy` slots (same
-interface as every real strategy) but not implemented, since those are
-external services not installed in this environment — `MissingStrategy`
+Other memory systems are modeled as pluggable `BenchmarkStrategy` slots
+(same interface as every real strategy) but not implemented, since those
+are external services not installed in this environment — `MissingStrategy`
 records that a comparison was requested rather than fabricating results.
 """
 import logging
@@ -76,8 +76,8 @@ class NeuroWeaveStrategy(BenchmarkStrategy):
 
 
 class MissingStrategy(BenchmarkStrategy):
-    """Placeholder for external services (Mem0, Zep, ...) not installed
-    in this environment. Raises rather than fabricating results."""
+    """Placeholder for external memory-system services not installed in
+    this environment. Raises rather than fabricating results."""
 
     def __init__(self, name: str):
         self.name = name
@@ -90,8 +90,8 @@ STRATEGY_REGISTRY: Dict[str, BenchmarkStrategy] = {
     "no_memory": NoMemoryStrategy(),
     "raw_history": RawHistoryStrategy(),
     "neuroweave": NeuroWeaveStrategy(),
-    "mem0": MissingStrategy("mem0"),
-    "zep": MissingStrategy("zep"),
+    "external_a": MissingStrategy("external_a"),
+    "external_b": MissingStrategy("external_b"),
 }
 
 

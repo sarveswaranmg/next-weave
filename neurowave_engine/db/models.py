@@ -1,5 +1,5 @@
 """SQLAlchemy models for NeuroWeave"""
-from sqlalchemy import Column, String, Float, DateTime, Integer, Text, Index, ForeignKey, Enum, JSON
+from sqlalchemy import Column, String, Float, DateTime, Date, Integer, Text, Index, ForeignKey, Enum, JSON
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.types import CHAR, TypeDecorator
@@ -100,6 +100,13 @@ class Tenant(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+    # Self-serve signup (see `neurowave_engine.services.signup_service`).
+    # A tenant created via `scripts/bootstrap_tenant.py` has
+    # `email_verified_at` set directly at creation, not through this flow.
+    email_verified_at = Column(DateTime, nullable=True)
+    verification_token_hash = Column(String(64), nullable=True)  # sha256 hex, like ApiKey.hashed_secret
+    verification_sent_at = Column(DateTime, nullable=True)
+
     users = relationship("User", back_populates="tenant", cascade="all, delete-orphan")
 
 
@@ -168,7 +175,7 @@ class ApiKey(Base):
 class ProviderCredential(Base):
     """
     Per-tenant, per-provider LLM API credential (bring-your-own-key),
-    encrypted at rest via `app/core/crypto.py`. One row per (tenant_id,
+    encrypted at rest via `neurowave_engine/core/crypto.py`. One row per (tenant_id,
     provider) so a tenant can store, e.g., both an OpenAI and an Anthropic
     key, shared across all of that tenant's users, and select between them
     per-request via `ChatRequest.provider`.
@@ -185,6 +192,46 @@ class ProviderCredential(Base):
 
     __table_args__ = (
         Index("idx_provider_cred_tenant_provider", "tenant_id", "provider", unique=True),
+    )
+
+
+class TenantUsage(Base):
+    """
+    Per-tenant, per-calendar-month call counter enforcing the free-tier cap
+    (see `neurowave_engine.services.usage_limiter`) on self-serve-signup
+    tenants. One row per (tenant_id, period_start); `period_start` is always
+    the first day of a month, so a new month starts a fresh row/counter.
+    """
+    __tablename__ = "tenant_usage"
+
+    id = Column(GUID(), primary_key=True, default=uuid.uuid4)
+    tenant_id = Column(GUID(), ForeignKey("tenants.id"), nullable=False)
+    period_start = Column(Date, nullable=False)
+    chat_call_count = Column(Integer, default=0, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    __table_args__ = (
+        Index("idx_tenant_usage_tenant_period", "tenant_id", "period_start", unique=True),
+    )
+
+
+class SignupAttempt(Base):
+    """
+    One row per `POST /signup` call (valid or not) - IP-based abuse
+    protection for self-serve signup (see
+    `neurowave_engine.services.signup_service`). Deliberately not linked to
+    any `Tenant`/email, so this table itself can't leak whether a given
+    email is already registered.
+    """
+    __tablename__ = "signup_attempts"
+
+    id = Column(GUID(), primary_key=True, default=uuid.uuid4)
+    ip_address = Column(String(64), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        Index("idx_signup_attempt_ip_created", "ip_address", "created_at"),
     )
 
 
@@ -1131,7 +1178,7 @@ class BenchmarkRun(Base):
     id = Column(GUID(), primary_key=True, default=uuid.uuid4)
     user_id = Column(GUID(), ForeignKey("users.id"), nullable=True)
 
-    strategy = Column(String(100), nullable=False)   # no_memory, raw_history, neuroweave, mem0, zep, ...
+    strategy = Column(String(100), nullable=False)   # no_memory, raw_history, neuroweave, external_a, external_b, ...
     model = Column(String(100))
     dataset = Column(String(255), nullable=False)     # Dataset name/identifier
 

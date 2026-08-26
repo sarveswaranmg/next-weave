@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>You're verified — NeuroWeave</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; max-width: 560px; margin: 80px auto; padding: 0 20px; color: #1a1a1a; }
+  h1 { font-size: 1.4rem; }
+  .warning { background: #fff8e1; color: #7a5c00; padding: 0.8rem 1rem; border-radius: 6px; font-size: 0.9rem; margin: 1.2rem 0; }
+  code.key { display: block; background: #111; color: #0f0; padding: 1rem; border-radius: 6px; font-size: 0.95rem; word-break: break-all; margin: 1rem 0; }
+  pre { background: #f4f4f4; padding: 1rem; border-radius: 6px; overflow-x: auto; font-size: 0.85rem; }
+</style>
+</head>
+<body>
+  <h1>Welcome, {{ tenant_name or "there" }}</h1>
+  <p>Your account is verified. Here's your API key:</p>
+  <code class="key">{{ api_key }}</code>
+  <div class="warning">This key is shown once and can't be retrieved again — store it now. If you lose it, mint a new one via <code>POST /runtime/keys</code> using this key first.</div>
+  <p>Quick start:</p>
+  <pre>curl -X POST {{ base_url }}runtime/chat \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: {{ api_key }}" \
+  -d '{"user_id": "00000000-0000-0000-0000-000000000001", "message": "Hello!"}'</pre>
+</body>
+</html>

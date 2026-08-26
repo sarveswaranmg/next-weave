@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NeuroWeave Handbook</title>
+<meta name="description" content="What was built, how the pipeline works, and the exact steps to self-host, verify, and test NeuroWeave — for free.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧠</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@400;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F5F6F8;
+    --bg-raised: #FFFFFF;
+    --code-bg: #ECEFF2;
+    --code-text: #262B36;
+    --text: #14171F;
+    --text-muted: #565C6B;
+    --text-faint: #7C8290;
+    --border: #DDE1E7;
+    --border-strong: #C4CAD3;
+    --accent: #B75E15;
+    --accent-strong: #93490D;
+    --accent-soft: #F3E3D0;
+    --ok: #3F7D58;
+    --ok-soft: #E1EEE5;
+    --warn: #A3433B;
+    --warn-soft: #F4E1DE;
+    --shadow: 0 1px 2px rgba(20,23,31,0.04), 0 8px 24px rgba(20,23,31,0.05);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #101317;
+      --bg-raised: #171B21;
+      --code-bg: #14181F;
+      --code-text: #DEE1E7;
+      --text: #E9EBEF;
+      --text-muted: #9BA2B0;
+      --text-faint: #6D7482;
+      --border: #262B33;
+      --border-strong: #333A45;
+      --accent: #E8A052;
+      --accent-strong: #F0B677;
+      --accent-soft: #2E2419;
+      --ok: #6FBE8D;
+      --ok-soft: #16241C;
+      --warn: #E08D85;
+      --warn-soft: #2A1918;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.35);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --bg: #101317;
+    --bg-raised: #171B21;
+    --code-bg: #14181F;
+    --code-text: #DEE1E7;
+    --text: #E9EBEF;
+    --text-muted: #9BA2B0;
+    --text-faint: #6D7482;
+    --border: #262B33;
+    --border-strong: #333A45;
+    --accent: #E8A052;
+    --accent-strong: #F0B677;
+    --accent-soft: #2E2419;
+    --ok: #6FBE8D;
+    --ok-soft: #16241C;
+    --warn: #E08D85;
+    --warn-soft: #2A1918;
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.35);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 16.5px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1, h2, h3, h4 {
+    font-family: 'IBM Plex Serif', Georgia, 'Times New Roman', serif;
+    font-weight: 600;
+    line-height: 1.25;
+    text-wrap: balance;
+    color: var(--text);
+    margin: 0;
+  }
+
+  code, pre, kbd {
+    font-family: 'IBM Plex Mono', 'SFMono-Regular', Consolas, monospace;
+  }
+
+  a { color: var(--accent-strong); text-decoration-color: var(--border-strong); text-underline-offset: 3px; }
+  a:hover { text-decoration-color: var(--accent-strong); }
+  a:focus-visible, button:focus-visible, summary:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px;
+  }
+
+  .shell {
+    display: grid;
+    grid-template-columns: 250px minmax(0, 1fr);
+    gap: 0;
+    max-width: 1180px;
+    margin: 0 auto;
+  }
+
+  /* ---------- Sidebar ---------- */
+  nav.toc {
+    position: sticky;
+    top: 0;
+    align-self: start;
+    height: 100vh;
+    overflow-y: auto;
+    padding: 2.6rem 1.4rem 2rem 1.6rem;
+    border-right: 1px solid var(--border);
+  }
+  .toc-brand {
+    font-family: 'IBM Plex Serif', serif;
+    font-weight: 700;
+    font-size: 1.05rem;
+    margin: 0 0 0.15rem;
+  }
+  .toc-brand-sub {
+    font-size: 0.78rem;
+    color: var(--text-faint);
+    margin: 0 0 1.8rem;
+    letter-spacing: 0.02em;
+  }
+  .toc-group { margin-bottom: 1.5rem; }
+  .toc-group-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    color: var(--text-faint);
+    margin: 0 0 0.5rem;
+    font-weight: 600;
+  }
+  .toc-group ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.35rem; }
+  .toc-group a {
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 0.87rem;
+    display: block;
+    padding: 0.15rem 0;
+    border-left: 2px solid transparent;
+    padding-left: 0.6rem;
+    margin-left: -0.6rem;
+  }
+  .toc-group a:hover { color: var(--text); border-left-color: var(--border-strong); }
+
+  /* ---------- Main content ---------- */
+  main { padding: 2.6rem 2.6rem 6rem; min-width: 0; }
+  .header {
+    max-width: 700px;
+    margin-bottom: 3.2rem;
+  }
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.74rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--accent-strong);
+    font-weight: 600;
+    margin-bottom: 0.9rem;
+  }
+  .eyebrow::before {
+    content: "";
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--accent);
+    display: inline-block;
+  }
+  .header h1 {
+    font-size: 2.4rem;
+    margin: 0 0 0.7rem;
+  }
+  .header p.lede {
+    font-size: 1.12rem;
+    color: var(--text-muted);
+    margin: 0;
+    max-width: 620px;
+  }
+  .meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 0.9rem;
+    margin-top: 1.4rem;
+    font-size: 0.82rem;
+    color: var(--text-faint);
+  }
+  .meta-row span { display: inline-flex; align-items: center; gap: 0.35rem; }
+  .pill {
+    display: inline-block;
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 0.2rem 0.6rem;
+    border-radius: 100px;
+    background: var(--ok-soft);
+    color: var(--ok);
+    letter-spacing: 0.02em;
+  }
+
+  section.block { max-width: 700px; margin-bottom: 3.6rem; scroll-margin-top: 1.5rem; }
+  section.block > h2 {
+    font-size: 1.5rem;
+    margin: 0 0 1.1rem;
+    padding-bottom: 0.7rem;
+    border-bottom: 1px solid var(--border);
+  }
+  section.block > h2 .num {
+    color: var(--text-faint);
+    font-weight: 400;
+    margin-right: 0.5rem;
+  }
+  h3 { font-size: 1.12rem; margin: 1.8rem 0 0.7rem; }
+  h4 { font-size: 0.95rem; margin: 1.3rem 0 0.5rem; font-family: 'IBM Plex Sans', sans-serif; font-weight: 600; }
+
+  p { margin: 0 0 1rem; color: var(--text); }
+  section.block p { color: var(--text); }
+  ul, ol { margin: 0 0 1rem; padding-left: 1.3rem; }
+  li { margin-bottom: 0.4rem; }
+  li::marker { color: var(--text-faint); }
+
+  strong { font-weight: 600; }
+
+  code.inline {
+    background: var(--code-bg);
+    color: var(--code-text);
+    padding: 0.14em 0.42em;
+    border-radius: 4px;
+    font-size: 0.87em;
+  }
+
+  .codeblock-wrap { overflow-x: auto; border-radius: 10px; margin: 1rem 0 1.3rem; box-shadow: var(--shadow); }
+  pre {
+    margin: 0;
+    background: var(--code-bg);
+    color: var(--code-text);
+    padding: 1rem 1.15rem;
+    font-size: 0.84rem;
+    line-height: 1.6;
+    border-radius: 10px;
+    min-width: max-content;
+  }
+  pre .c { color: var(--text-faint); }
+  pre .accent { color: var(--accent-strong); }
+
+  .callout {
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    background: var(--bg-raised);
+    border-radius: 8px;
+    padding: 0.95rem 1.15rem;
+    margin: 1.2rem 0;
+    box-shadow: var(--shadow);
+  }
+  .callout.ok { border-left-color: var(--ok); }
+  .callout.warn { border-left-color: var(--warn); }
+  .callout-label {
+    font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em;
+    font-weight: 700; margin-bottom: 0.35rem; display: block;
+  }
+  .callout.ok .callout-label { color: var(--ok); }
+  .callout.warn .callout-label { color: var(--warn); }
+  .callout p:last-child { margin-bottom: 0; }
+  .callout p { font-size: 0.92rem; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.87rem;
+    margin: 1rem 0 1.4rem;
+  }
+  .table-wrap { overflow-x: auto; }
+  th, td {
+    text-align: left;
+    padding: 0.55rem 0.8rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  th {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-faint);
+    font-weight: 600;
+  }
+  td code.inline { white-space: nowrap; }
+  tr:last-child td { border-bottom: none; }
+
+  .step-list { counter-reset: step; list-style: none; padding-left: 0; }
+  .step-list > li {
+    counter-increment: step;
+    position: relative;
+    padding-left: 2.5rem;
+    margin-bottom: 1.4rem;
+  }
+  .step-list > li::before {
+    content: counter(step);
+    position: absolute; left: 0; top: 0;
+    width: 1.7rem; height: 1.7rem;
+    border-radius: 50%;
+    background: var(--accent-soft);
+    color: var(--accent-strong);
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 600;
+    font-size: 0.85rem;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .step-list h4 { margin: 0 0 0.35rem; }
+
+  .pipeline {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+    margin: 1.2rem 0 1.5rem;
+    font-size: 0.83rem;
+  }
+  .pipeline .stage {
+    background: var(--bg-raised);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 0.5rem 0.75rem;
+    box-shadow: var(--shadow);
+    font-weight: 500;
+  }
+  .pipeline .arrow { color: var(--text-faint); font-family: 'IBM Plex Mono', monospace; }
+
+  .path-compare {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin: 1.2rem 0 1.5rem;
+  }
+  @media (max-width: 640px) { .path-compare { grid-template-columns: 1fr; } }
+  .path-card {
+    background: var(--bg-raised);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.1rem 1.2rem;
+    box-shadow: var(--shadow);
+  }
+  .path-card h4 { margin-top: 0; display: flex; align-items: center; gap: 0.5rem; }
+  .path-card ul { padding-left: 1.1rem; margin-bottom: 0; }
+  .path-card li { font-size: 0.87rem; color: var(--text-muted); }
+
+  footer {
+    max-width: 700px;
+    margin-top: 4rem;
+    padding-top: 1.6rem;
+    border-top: 1px solid var(--border);
+    font-size: 0.8rem;
+    color: var(--text-faint);
+  }
+
+  @media (max-width: 880px) {
+    .shell { grid-template-columns: 1fr; }
+    nav.toc {
+      position: relative;
+      height: auto;
+      border-right: none;
+      border-bottom: 1px solid var(--border);
+      padding: 1.4rem 1.6rem;
+    }
+    .toc-group { margin-bottom: 0.9rem; }
+    main { padding: 2rem 1.4rem 4rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <nav class="toc" aria-label="Table of contents">
+    <p class="toc-brand">NeuroWeave</p>
+    <p class="toc-brand-sub">Handbook</p>
+
+    <div class="toc-group">
+      <p class="toc-group-label">Orientation</p>
+      <ul>
+        <li><a href="#what-we-built">What we built</a></li>
+        <li><a href="#how-it-works">How it works</a></li>
+        <li><a href="#free-self-hosting">Self-hosting is free</a></li>
+      </ul>
+    </div>
+
+    <div class="toc-group">
+      <p class="toc-group-label">Running it</p>
+      <ul>
+        <li><a href="#deploy-paths">Ways to deploy</a></li>
+        <li><a href="#self-host">Self-host, step by step</a></li>
+        <li><a href="#testing">Testing</a></li>
+      </ul>
+    </div>
+
+    <div class="toc-group">
+      <p class="toc-group-label">Reference</p>
+      <ul>
+        <li><a href="#env-vars">Environment variables</a></li>
+        <li><a href="#endpoints">Endpoints</a></li>
+        <li><a href="#file-map">Where things live</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main>
+    <div class="header">
+      <span class="eyebrow">Reference document</span>
+      <h1>The NeuroWeave Handbook</h1>
+      <p class="lede">What got built across two sessions, how the pieces fit together, and the exact
+      steps to self-host, verify, and test all of it &mdash; for free.</p>
+      <div class="meta-row">
+        <span class="pill">MIT licensed</span>
+        <span>254 tests passing</span>
+        <span>&middot;</span>
+        <span>12 Alembic migrations</span>
+        <span>&middot;</span>
+        <span>Last updated 2026&#8209;08&#8209;26</span>
+      </div>
+    </div>
+
+    <!-- 1. WHAT WE BUILT -->
+    <section class="block" id="what-we-built">
+      <h2><span class="num">01</span>What we built</h2>
+      <p>NeuroWeave already had a working cognitive memory engine &mdash; structured extraction,
+      semantic consolidation, an identity graph, predictive recall, all wired behind one
+      <code class="inline">RuntimeOrchestrator.chat()</code> pipeline and a multi-tenant FastAPI
+      server. Two things were missing before it could go from &ldquo;a project you run&rdquo; to
+      &ldquo;a memory layer other people can adopt or you can host for others&rdquo;: an
+      an install experience as easy as <code class="inline">pip install</code>, and a way for
+      people to actually get access without you running a script for each one. Both got built.</p>
+
+      <div class="path-compare">
+        <div class="path-card">
+          <h4>Embedded mode</h4>
+          <p style="font-size:0.87rem; color:var(--text-muted); margin-bottom:0.6rem;">
+          <code class="inline">pip install</code> and go &mdash; no server.</p>
+          <ul>
+            <li>New <code class="inline">neurowave.Memory</code> class runs the full pipeline in-process against local SQLite</li>
+            <li>Core package renamed <code class="inline">app/</code> &rarr; <code class="inline">neurowave_engine/</code> so it can be imported without colliding with your own <code class="inline">app/</code></li>
+            <li>Dependencies split into a lean core vs. a <code class="inline">server</code> extra</li>
+          </ul>
+        </div>
+        <div class="path-card">
+          <h4>Self-serve signup</h4>
+          <p style="font-size:0.87rem; color:var(--text-muted); margin-bottom:0.6rem;">
+          Host it once, let others get their own key.</p>
+          <ul>
+            <li>Public <code class="inline">/signup</code> page: email &rarr; verify &rarr; API key, shown once</li>
+            <li>Hard usage cap per signup tenant, checked before the LLM call runs</li>
+            <li>IP rate limiting, no account-enumeration, no billing yet</li>
+          </ul>
+        </div>
+      </div>
+
+      <p>Both sit on top of the same engine and the same <code class="inline">Tenant</code> /
+      <code class="inline">ApiKey</code> / <code class="inline">User</code> auth model that was
+      already there &mdash; neither one is a fork or a parallel system.</p>
+    </section>
+
+    <!-- 2. HOW IT WORKS -->
+    <section class="block" id="how-it-works">
+      <h2><span class="num">02</span>How it works</h2>
+
+      <h3>The pipeline</h3>
+      <p>Every chat turn, embedded or hosted, runs the same sequence:</p>
+      <div class="pipeline">
+        <span class="stage">Ingest</span><span class="arrow">&rarr;</span>
+        <span class="stage">Score</span><span class="arrow">&rarr;</span>
+        <span class="stage">World model</span><span class="arrow">&rarr;</span>
+        <span class="stage">Recall</span><span class="arrow">&rarr;</span>
+        <span class="stage">Compose context</span><span class="arrow">&rarr;</span>
+        <span class="stage">LLM call</span><span class="arrow">&rarr;</span>
+        <span class="stage">Store response</span>
+      </div>
+      <p>Scoring is heuristic, not an LLM call &mdash; the design principle throughout this codebase
+      is that a live request never waits on an LLM call it doesn&rsquo;t strictly need. Expensive
+      batch work (semantic consolidation, memory evolution, &ldquo;dream mode&rdquo; offline
+      replay) is scheduled separately rather than run inline.</p>
+
+      <h3>Two ways to run the same engine</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th></th><th>Embedded</th><th>Server</th></tr></thead>
+          <tbody>
+            <tr><td>Entry point</td><td><code class="inline">neurowave.Memory()</code></td><td><code class="inline">CognitiveAgent</code> / REST</td></tr>
+            <tr><td>Storage</td><td>Local SQLite file</td><td>Postgres</td></tr>
+            <tr><td>Background jobs</td><td>None (synchronous only)</td><td>Celery + Redis</td></tr>
+            <tr><td>Tenancy</td><td>One implicit local tenant</td><td>Many, isolated by API key</td></tr>
+            <tr><td>Fits</td><td>A script, a notebook, one process</td><td>A product other people/services call</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Multi-tenancy and the signup layer</h3>
+      <p>Every hosted request authenticates to one <code class="inline">ApiKey</code>, which
+      resolves to one <code class="inline">tenant_id</code>. Every <code class="inline">user_id</code>
+      in a request must belong to that tenant &mdash; that&rsquo;s what stops one customer from
+      reading another&rsquo;s data. The signup flow just adds a second, public way to create a
+      <code class="inline">Tenant</code>: <code class="inline">tenant.email_verified_at</code> is
+      set only when someone verifies through <code class="inline">/signup</code>, which is also
+      exactly the flag that decides whether usage caps apply to them (more on that next).</p>
+    </section>
+
+    <!-- 3. SELF-HOSTING IS FREE -->
+    <section class="block" id="free-self-hosting">
+      <h2><span class="num">03</span>Self-hosting is free</h2>
+      <p>NeuroWeave is MIT licensed. There is no paid tier of the software itself, no license
+      key, and nothing in the codebase phones home. Running your own instance costs exactly two
+      things: whatever server you put it on, and whatever your own OpenAI/Google/Anthropic keys
+      cost you for the calls you actually make.</p>
+
+      <div class="callout ok">
+        <span class="callout-label">Fixed while building this</span>
+        <p>The usage cap added for self-serve signup was originally wired to every
+        <code class="inline">/runtime/chat</code> call, which would have capped
+        <em>your own</em> tenant at 200 calls/month too. It now only applies to tenants that
+        verified through the public <code class="inline">/signup</code> page &mdash; a tenant you
+        create for yourself with <code class="inline">scripts/bootstrap_tenant.py</code> is
+        never capped, tracked, or throttled. Self-hosting for yourself or your team has no
+        artificial ceiling.</p>
+      </div>
+
+      <p>The free-tier cap only exists for the scenario where <em>you</em> choose to run a
+      public signup page and let strangers create their own tenants under your infrastructure
+      &mdash; it protects you, the operator, from an open door driving up your LLM bill, since
+      there&rsquo;s no billing integration (yet) to make strangers pay their own way. If you
+      never expose <code class="inline">/signup</code>, or only ever create tenants yourself,
+      this cap never engages.</p>
+    </section>
+
+    <!-- 4. WAYS TO DEPLOY -->
+    <section class="block" id="deploy-paths">
+      <h2><span class="num">04</span>Ways to deploy</h2>
+
+      <h3>A. Embedded &mdash; no deploy at all</h3>
+      <p>For a script, notebook, or a single process that just needs memory. Nothing to host.</p>
+      <div class="codeblock-wrap"><pre><span class="c"># from a NeuroWeave checkout</span>
+pip install -e .
+pip install -e "sdk/python[embedded]"</pre></div>
+      <div class="codeblock-wrap"><pre><span class="accent">from</span> neurowave <span class="accent">import</span> Memory
+m = Memory()  <span class="c"># ./neurowave.db on first use</span>
+m.chat(user_id=<span class="accent">"alice"</span>, message=<span class="accent">"I use FastAPI and PostgreSQL."</span>)</pre></div>
+
+      <h3>B. Self-hosted server &mdash; Docker Compose + Caddy</h3>
+      <p>The path this handbook walks through below. One server, automatic HTTPS, Postgres +
+      Redis + Celery for the full pipeline including background consolidation. This is what
+      <code class="inline">docker-compose.prod.yml</code> is built for.</p>
+
+      <h3>C. Kubernetes</h3>
+      <p>Manifests already exist under <code class="inline">k8s/</code> for a cluster deployment
+      &mdash; see <code class="inline">k8s/README.md</code>. Same engine, same image, just a
+      different orchestrator.</p>
+    </section>
+
+    <!-- 5. SELF-HOST STEP BY STEP -->
+    <section class="block" id="self-host">
+      <h2><span class="num">05</span>Self-host it, step by step</h2>
+      <p>This is the Docker Compose + Caddy path (option B above), aimed at a real server with a
+      domain. Everything here also works verbatim on your own machine for a dry run first
+      &mdash; set <code class="inline">DOMAIN=localhost</code> and Caddy issues itself a local
+      certificate instead of requesting one from Let&rsquo;s Encrypt.</p>
+
+      <ol class="step-list">
+        <li>
+          <h4>Provision a server and point DNS at it</h4>
+          <p>Any small Linux VPS works. Create an A record for your domain pointing at the
+          server&rsquo;s public IP before starting Caddy &mdash; it needs that to succeed at the
+          Let&rsquo;s Encrypt ACME challenge.</p>
+        </li>
+        <li>
+          <h4>Install Docker + Docker Compose, open ports 80/443</h4>
+        </li>
+        <li>
+          <h4>Clone the repo and create <code class="inline">.env.prod</code></h4>
+          <div class="codeblock-wrap"><pre>cp .env.prod.example .env.prod</pre></div>
+          <p>Fill in, at minimum:</p>
+          <div class="table-wrap">
+            <table>
+              <tbody>
+                <tr><td><code class="inline">DOMAIN</code></td><td>Your real domain (or <code class="inline">localhost</code> for a dry run)</td></tr>
+                <tr><td><code class="inline">OPENAI_API_KEY</code></td><td>Required &mdash; embeddings always go through OpenAI</td></tr>
+                <tr><td><code class="inline">GOOGLE_API_KEY</code></td><td>Optional &mdash; the default chat provider (free tier); without it, chat falls back to <code class="inline">echo</code></td></tr>
+                <tr><td><code class="inline">POSTGRES_PASSWORD</code></td><td><code class="inline">openssl rand -hex 32</code></td></tr>
+                <tr><td><code class="inline">CREDENTIAL_ENCRYPTION_KEY</code></td><td><code class="inline">python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"</code></td></tr>
+                <tr><td><code class="inline">SMTP_*</code></td><td>Real creds if you want <code class="inline">/signup</code>&rsquo;s verification email to actually send &mdash; leave blank to see the link in the container logs instead</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </li>
+        <li>
+          <h4>Build and start the stack</h4>
+          <div class="codeblock-wrap"><pre>docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build</pre></div>
+        </li>
+        <li>
+          <h4>Run migrations</h4>
+          <div class="codeblock-wrap"><pre>docker compose -f docker-compose.prod.yml --env-file .env.prod exec neuroweave \
+  alembic -c migrations/alembic.ini upgrade head</pre></div>
+        </li>
+        <li>
+          <h4>Get your first key</h4>
+          <p>Two ways &mdash; use whichever matches how you plan to use this deployment:</p>
+          <div class="codeblock-wrap"><pre><span class="c"># For yourself: no usage cap, ever</span>
+docker compose -f docker-compose.prod.yml --env-file .env.prod exec neuroweave \
+  python scripts/bootstrap_tenant.py --name "My Company" --email me@example.com
+
+<span class="c"># For others: visit the page, or drive it from the command line</span>
+open https://$DOMAIN/signup</pre></div>
+        </li>
+        <li>
+          <h4>Verify end-to-end</h4>
+          <div class="codeblock-wrap"><pre>curl https://$DOMAIN/runtime/health
+
+curl -X POST https://$DOMAIN/runtime/chat \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: nw_live_..." \
+  -d '{"user_id": "00000000-0000-0000-0000-000000000001", "message": "hello", "provider": "echo"}'</pre></div>
+          <p>Expect a <code class="inline">200</code> with an echoed response. Swap
+          <code class="inline">provider</code> to <code class="inline">"google"</code> once
+          you&rsquo;re ready to use a real model.</p>
+        </li>
+      </ol>
+
+      <div class="callout warn">
+        <span class="callout-label">If you plan to open /signup publicly</span>
+        <p>The IP rate limiter only sees real caller IPs if uvicorn trusts Caddy&rsquo;s
+        <code class="inline">X-Forwarded-For</code> header &mdash; <code class="inline">docker-compose.prod.yml</code>
+        already runs uvicorn with <code class="inline">--proxy-headers --forwarded-allow-ips='*'</code>
+        for this, which is safe specifically because Caddy is the only public entry point (no
+        host port mapping on the app container). Don&rsquo;t remove that flag without also
+        exposing the app container directly, or every signup will appear to come from
+        Caddy&rsquo;s own IP.</p>
+      </div>
+    </section>
+
+    <!-- 6. TESTING -->
+    <section class="block" id="testing">
+      <h2><span class="num">06</span>Testing</h2>
+      <p>Everything below runs against local SQLite &mdash; no Docker, no real API calls, no
+      network. Fast enough to run before every change.</p>
+
+      <div class="codeblock-wrap"><pre><span class="c"># from the repo root, with the venv activated</span>
+DATABASE_URL="sqlite:///./ci_test.db" OPENAI_API_KEY=sk-test LOG_LEVEL=INFO \
+  .venv/bin/python -m pytest tests/ sdk/python/tests/ -q</pre></div>
+      <p>254 tests, in around 45 seconds: the core engine, auth/RBAC, the embedded
+      <code class="inline">Memory</code> SDK, and the signup/usage-cap flow (email verification,
+      single-use tokens, IP rate limiting, the cap applying only to self-serve tenants).</p>
+
+      <h3>Manually exercising signup, without a real server</h3>
+      <p>Useful for confirming the flow works before you have SMTP configured &mdash; the
+      verification link just prints to the log instead of being emailed.</p>
+      <div class="codeblock-wrap"><pre>uvicorn neurowave_engine.main:app --reload
+<span class="c"># in a browser: http://localhost:8000/signup</span>
+<span class="c"># submit the form, then check this terminal's log for:</span>
+<span class="c">#   Verification link for you@example.com: http://localhost:8000/signup/verify?token=...</span></pre></div>
+    </section>
+
+    <!-- 7. ENV VARS -->
+    <section class="block" id="env-vars">
+      <h2><span class="num">07</span>Environment variables</h2>
+      <h3>Core</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Variable</th><th>Default</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td><code class="inline">DATABASE_URL</code></td><td>Postgres DSN</td><td>SQLite works too (embedded mode, tests)</td></tr>
+            <tr><td><code class="inline">OPENAI_API_KEY</code></td><td>&mdash;</td><td>Required &mdash; embeddings only, regardless of chat provider</td></tr>
+            <tr><td><code class="inline">GOOGLE_API_KEY</code></td><td>&mdash;</td><td>Default chat provider, free tier</td></tr>
+            <tr><td><code class="inline">RUNTIME_DEFAULT_PROVIDER</code></td><td><code class="inline">google</code></td><td></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <h3>Self-serve signup</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Variable</th><th>Default</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td><code class="inline">SIGNUP_BASE_URL</code></td><td><code class="inline">http://localhost:8000</code></td><td>Used to build the emailed verification link</td></tr>
+            <tr><td><code class="inline">FREE_TIER_MONTHLY_CHAT_LIMIT</code></td><td><code class="inline">200</code></td><td>Applies only to <code class="inline">/signup</code> tenants</td></tr>
+            <tr><td><code class="inline">SIGNUP_MAX_PER_IP_PER_DAY</code></td><td><code class="inline">5</code></td><td></td></tr>
+            <tr><td><code class="inline">SIGNUP_TOKEN_TTL_HOURS</code></td><td><code class="inline">24</code></td><td></td></tr>
+            <tr><td><code class="inline">SMTP_HOST</code></td><td>empty</td><td>Blank = log the link instead of emailing it</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 8. ENDPOINTS -->
+    <section class="block" id="endpoints">
+      <h2><span class="num">08</span>Endpoints that matter</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Route</th><th>Auth</th><th>What it does</th></tr></thead>
+          <tbody>
+            <tr><td><code class="inline">POST /runtime/chat</code></td><td>API key</td><td>The main entry point &mdash; one full cognitive turn</td></tr>
+            <tr><td><code class="inline">GET /runtime/health</code></td><td>none</td><td>Liveness/readiness</td></tr>
+            <tr><td><code class="inline">GET /signup</code></td><td>none</td><td>Signup form</td></tr>
+            <tr><td><code class="inline">POST /signup</code></td><td>none</td><td>Submit email &rarr; sends verification link</td></tr>
+            <tr><td><code class="inline">GET /signup/verify</code></td><td>token in URL</td><td>Verifies email, shows the API key once</td></tr>
+            <tr><td><code class="inline">POST /runtime/keys</code></td><td>API key (<code class="inline">manage_keys</code>)</td><td>Mint an additional key for your tenant</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 9. FILE MAP -->
+    <section class="block" id="file-map">
+      <h2><span class="num">09</span>Where things live</h2>
+      <div class="table-wrap">
+        <table>
+          <tbody>
+            <tr><td><code class="inline">neurowave_engine/services/runtime_orchestrator.py</code></td><td>The pipeline itself</td></tr>
+            <tr><td><code class="inline">sdk/python/neurowave/embedded.py</code></td><td>The embedded <code class="inline">Memory</code> class</td></tr>
+            <tr><td><code class="inline">neurowave_engine/api/signup.py</code></td><td>Signup routes + pages</td></tr>
+            <tr><td><code class="inline">neurowave_engine/services/signup_service.py</code></td><td>Verification logic</td></tr>
+            <tr><td><code class="inline">neurowave_engine/services/usage_limiter.py</code></td><td>The free-tier cap</td></tr>
+            <tr><td><code class="inline">docker-compose.prod.yml</code> + <code class="inline">deploy/Caddyfile</code></td><td>The production stack</td></tr>
+            <tr><td><code class="inline">docs/DEPLOYMENT.md</code></td><td>The longer step-by-step this handbook summarizes</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <footer>
+      NeuroWeave &mdash; MIT licensed. This handbook reflects the state of the codebase as of
+      2026&#8209;08&#8209;26; the source of truth is always the code and
+      <code class="inline">docs/DOCUMENTATION.md</code>.
+    </footer>
+  </main>
+</div>
+
+</body>
+</html>

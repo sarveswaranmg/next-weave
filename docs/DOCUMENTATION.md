@@ -112,7 +112,7 @@ scoring the result for coverage/alignment/quality before it's used.
                                  │ REST / WebSocket
                                  ▼
 ┌──────────────────────────────────────────────────────────────────────────┐
-│                         FastAPI Application (app/main.py)                │
+│                  FastAPI Application (neurowave_engine/main.py)          │
 │  ┌────────────┐ ┌───────────┐ ┌───────────┐ ┌────────────┐ ┌──────────┐ │
 │  │  ingest /  │ │ cognitive │ │ semantic  │ │  identity  │ │predictive│ │
 │  │  retrieval │ │  scoring  │ │consolidate│ │   graph    │ │  recall  │ │
@@ -138,7 +138,7 @@ scoring the result for coverage/alignment/quality before it's used.
                                           └─────────────────────────────┘
 ```
 
-Everything above the database line is one FastAPI app (`app/main.py`) with routers registered
+Everything above the database line is one FastAPI app (`neurowave_engine/main.py`) with routers registered
 per subsystem — there's no microservice split; the "runtime platform" is a orchestration layer
 on top of the same service classes every other router calls, not a separate system.
 
@@ -386,7 +386,7 @@ Zero runtime dependencies — built on native `fetch`.
 
 ## Configuration Reference
 
-All settings live in `app/core/config.py` (Pydantic `BaseSettings`, overridable via `.env` or
+All settings live in `neurowave_engine/core/config.py` (Pydantic `BaseSettings`, overridable via `.env` or
 environment variables — see `.env.example` for the ones you're actually likely to need to
 change). The essentials:
 
@@ -401,7 +401,7 @@ change). The essentials:
 | `MEMORY_RETRIEVAL_TOP_K` | `10` | Default candidate pool size for retrieval |
 | `MEMORY_CONTEXT_TOKEN_LIMIT` | `2000` | Default token budget for reconstructed context |
 
-Beyond that, `app/core/config.py` has ~60 more tunables covering per-memory-type decay rates,
+Beyond that, `neurowave_engine/core/config.py` has ~60 more tunables covering per-memory-type decay rates,
 forgetting/archival thresholds, context-composer quality-score weights, dream-mode scheduling,
 identity-shift evidence thresholds, and world-model merge/staleness thresholds — each documented
 inline with a comment explaining the tradeoff it controls. Override only if you've read the
@@ -456,7 +456,7 @@ Real, valid deployment artifacts ship in the repo. Note their actual verificatio
 
 ## Observability
 
-- **Prometheus** (`app/utils/prometheus_metrics.py`, scraped at `GET /metrics`): chat request
+- **Prometheus** (`neurowave_engine/utils/prometheus_metrics.py`, scraped at `GET /metrics`): chat request
   counts by provider/status, chat latency histogram, memories-ingested counter by type,
   benchmark-run counter by strategy, dream-session counter by status.
 - **`RuntimeMetricsService`** (`GET /runtime/metrics`, `GET /runtime/dashboard`): point-in-time
@@ -467,11 +467,11 @@ Real, valid deployment artifacts ship in the repo. Note their actual verificatio
 
 ## Security & Privacy
 
-- **API-key auth**: `verify_api_key` (`app/core/security.py`) gates all `/runtime/*` routes when
+- **API-key auth**: `verify_api_key` (`neurowave_engine/core/security.py`) gates all `/runtime/*` routes when
   `RUNTIME_API_KEY` is set; it's a no-op when unset, which is intentional for local development
   but means you must set it before exposing this publicly.
 - **RBAC scaffold**: `Role` (`ADMIN`/`DEVELOPER`/`READONLY`) and `ROLE_PERMISSIONS` exist in
-  `app/core/security.py` but nothing currently checks a caller's role against a specific
+  `neurowave_engine/core/security.py` but nothing currently checks a caller's role against a specific
   permission — only that *a* valid key was presented. Wiring `has_permission()` into individual
   routes is a natural next contribution.
 - **GDPR "right to be forgotten"**: `DataDeletionService.delete_user()` performs a real,
@@ -505,18 +505,18 @@ which real bugs it caught.
 
 ## Benchmarking (NeuroBench)
 
-`NeuroBench` (`app/services/benchmark_suite.py`) compares memory strategies head-to-head on the
+`NeuroBench` (`neurowave_engine/services/benchmark_suite.py`) compares memory strategies head-to-head on the
 same query/history:
 
 - `no_memory` — empty context (baseline floor)
 - `raw_history` — dump the full conversation history, token-counted
 - `neuroweave` — the real `ContextComposer` pipeline
 
-`mem0` and `zep` are registered as `MissingStrategy` — calling them raises `NotImplementedError`,
-which `NeuroBench.run()` catches and skips with a log line. **Their comparison numbers are never
-fabricated** — if you want a real head-to-head against those products, implement a
-`BenchmarkStrategy` subclass for them (they slot into `STRATEGY_REGISTRY` without touching
-`run()`'s logic) with the actual SDK installed.
+`external_a` and `external_b` are registered as `MissingStrategy` slots for other memory
+systems — calling them raises `NotImplementedError`, which `NeuroBench.run()` catches and skips
+with a log line. **Their comparison numbers are never fabricated** — if you want a real
+head-to-head against another product, implement a `BenchmarkStrategy` subclass for it (it slots
+into `STRATEGY_REGISTRY` without touching `run()`'s logic) with the actual SDK installed.
 
 ```bash
 curl -X POST localhost:8000/runtime/evaluate \
@@ -545,8 +545,8 @@ not an independent LLM-judge evaluation).
 - No gRPC server runs yet (proto file only — see Production Deployment).
 - Only the LangChain framework integration is implemented; 6 others are documented-as-the-same-
   pattern but not built.
-- `app/models/` contains a legacy repository-pattern module (`UserRepository`, `MemoryRepository`)
-  from the very first build that predates `app/db/models.py` + the service-layer pattern every
+- `neurowave_engine/models/` contains a legacy repository-pattern module (`UserRepository`, `MemoryRepository`)
+  from the very first build that predates `neurowave_engine/db/models.py` + the service-layer pattern every
   later subsystem uses. Nothing in the current codebase imports it. It's flagged here rather than
   removed so a maintainer can confirm before deleting it.
 - RBAC permission checks aren't enforced yet (see Security & Privacy above).
@@ -559,16 +559,16 @@ Roughly in order of leverage:
 1. Wire `has_permission()` RBAC checks into `/runtime/*` routes.
 2. True token-streamed chat (extend `LLMProvider` with a `stream()` method).
 3. Implement the gRPC servicer described in `proto/neuroweave.proto`.
-4. Real Mem0/Zep `BenchmarkStrategy` implementations for head-to-head NeuroBench comparisons.
+4. Real `BenchmarkStrategy` implementations for other memory systems, for head-to-head NeuroBench comparisons.
 5. Additional framework integrations (LlamaIndex, CrewAI, AutoGen, OpenAI Agents SDK, Haystack,
    Semantic Kernel) following the LangChain adapter's pattern.
 6. OpenTelemetry distributed tracing alongside the existing Prometheus metrics.
-7. Remove or repurpose the dead `app/models/` legacy module.
+7. Remove or repurpose the dead `neurowave_engine/models/` legacy module.
 
 ## Contributing
 
 Issues and PRs are welcome. See [CONTRIBUTING.md](../CONTRIBUTING.md) for setup and expectations.
 Before opening a PR that adds a subsystem, skim [The Full Pipeline](#the-full-pipeline) and the
-relevant service files under `app/services/` to keep the same design philosophy: heuristics in
+relevant service files under `neurowave_engine/services/` to keep the same design philosophy: heuristics in
 hot paths, LLM calls only where their cost is justified, soft-delete by default, and real tests
 (unit + a live end-to-end smoke check) for anything you add.

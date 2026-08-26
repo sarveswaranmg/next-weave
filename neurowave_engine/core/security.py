@@ -14,7 +14,7 @@ holding that one key read or delete *any* tenant's data by
 guessing/enumerating UUIDs).
 
 Encryption at rest for stored provider credentials lives in
-`app/core/crypto.py`. Encryption at rest for the database itself, SOC 2/
+`neurowave_engine/core/crypto.py`. Encryption at rest for the database itself, SOC 2/
 GDPR/HIPAA compliance, and multi-region disaster recovery remain
 operational/infrastructure concerns outside application code.
 """

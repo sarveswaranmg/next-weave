@@ -16,6 +16,7 @@ from neurowave_engine.api.memory_evolution import router as memory_evolution_rou
 from neurowave_engine.api.dream import router as dream_router
 from neurowave_engine.api.world import router as world_router
 from neurowave_engine.api.runtime import router as runtime_router, metrics_router
+from neurowave_engine.api.signup import router as signup_router
 
 
 @asynccontextmanager
@@ -67,6 +68,7 @@ app.include_router(dream_router)
 app.include_router(world_router)
 app.include_router(runtime_router)
 app.include_router(metrics_router)
+app.include_router(signup_router)
 
 # Root endpoint
 @app.get("/")

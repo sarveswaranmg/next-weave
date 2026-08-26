@@ -164,6 +164,22 @@ class Settings(BaseSettings):
                                             # credentials at rest. Required once any ProviderCredential is stored.
     runtime_version: str = "1.0.0-day10"
 
+    # Self-serve signup (neurowave_engine/api/signup.py, services/signup_service.py)
+    free_tier_monthly_chat_limit: int = 200
+    signup_max_per_ip_per_day: int = 5
+    signup_token_ttl_hours: int = 24
+    signup_base_url: str = "http://localhost:8000"  # used to build the emailed verification link
+
+    # SMTP (plain stdlib smtplib, no vendor lock-in). If smtp_host is unset,
+    # the verification link is logged instead of emailed - a local-dev/test
+    # fallback, same pattern the `echo` LLM provider already uses.
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_username: str = ""
+    smtp_password: str = ""
+    smtp_from_email: str = "noreply@neuroweave.local"
+    smtp_use_tls: bool = True
+
     class Config:
         env_file = ".env"
         case_sensitive = False

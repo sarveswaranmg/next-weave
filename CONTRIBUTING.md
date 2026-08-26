@@ -38,9 +38,9 @@ cd sdk/typescript && npx tsc -p tsconfig.json --noEmit
   external or optional service from a path that should still work without it, follow this
   pattern.
 - **Don't fake results.** The benchmark suite explicitly raises `NotImplementedError` for
-  strategies it can't actually run (Mem0/Zep) rather than fabricating comparison numbers. Apply
-  the same standard anywhere you're tempted to stub a result instead of implementing or clearly
-  erroring.
+  strategies it can't actually run (other memory systems) rather than fabricating comparison
+  numbers. Apply the same standard anywhere you're tempted to stub a result instead of
+  implementing or clearly erroring.
 - **Test with more than mocks.** Every existing subsystem has both unit tests and was verified
   with a live end-to-end run against a real (SQLite is fine) database before being considered
   done. Please do the same for new subsystems.

@@ -1,5 +1,5 @@
 """
-Memory — the zero-server, mem0-style entry point.
+Memory — the zero-server entry point.
 
     from neurowave import Memory
 
